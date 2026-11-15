@@ -4,9 +4,6 @@ import java.util.List;
 
 /**
  * 单个动作。
- *
- * 名称、要领来自 exercises-dataset（MIT）；
- * 演示媒体来自 © Gym visual（https://gymvisual.com/），已购授权。
  */
 public class Exercise {
     public final String id;

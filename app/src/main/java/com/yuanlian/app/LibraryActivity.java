@@ -165,7 +165,7 @@ public class LibraryActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView cap = new TextView(this);
-        cap.setText("循环演示 · © Gym visual");
+        cap.setText("循环演示");
         cap.setTextColor(Ui.INK_SOFT);
         cap.setTextSize(10);
         cap.setGravity(Gravity.END);
@@ -261,15 +261,6 @@ public class LibraryActivity extends Activity {
             row.addView(step, new LinearLayout.LayoutParams(0,
                     ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         }
-
-        TextView credit = new TextView(this);
-        credit.setText("动作条目与中文要领：exercises-dataset（MIT）\n演示媒体：© Gym visual — https://gymvisual.com/");
-        credit.setTextColor(Ui.INK_SOFT);
-        credit.setTextSize(10);
-        credit.setLineSpacing(Ui.dpi(this, 3), 1f);
-        credit.setPadding(0, Ui.dpi(this, 20), 0, 0);
-        Ui.font(credit, 400);
-        box.addView(credit);
 
         LinearLayout footer = new LinearLayout(this);
         footer.setOrientation(LinearLayout.HORIZONTAL);

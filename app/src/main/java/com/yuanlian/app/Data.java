@@ -19,9 +19,6 @@ import java.util.Set;
 
 /**
  * 动作库与训练计划。
- *
- * 动作条目、中文要领：exercises-dataset（MIT）；
- * 演示缩略图与动图：© Gym visual（https://gymvisual.com/），已购授权。
  */
 public final class Data {
 

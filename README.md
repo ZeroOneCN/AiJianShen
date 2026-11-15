@@ -1,7 +1,7 @@
 # 私人健身教练（YuanLian）
 
 一个不依赖任何境外服务的本地训练 App。纯 Java + XML，45 个类约 13 800 行，
-运行时零第三方依赖，本地完整构建 APK 约 **168 MB**（其中约 140 MB 是 1324 段
+运行时零第三方依赖，完整 APK 约 **168 MB**（其中约 140 MB 是 1324 段
 640px 循环演示、34 MB 是 960px 静态图），素材全部打进安装包，装完即用、不下载任何资源。
 
 没有云端账号，也不访问公网。用到的两个「对外」能力都是本地闭环：蓝牙直连体脂秤、
@@ -28,7 +28,7 @@
 
 ## 安装
 
-从构建产物直接安装，无需任何额外资源包或联网首次启动。
+直接安装，无需任何额外资源包，首次启动也不联网。
 
 ```bash
 adb install -r app/build/outputs/apk/debug/app-debug.apk
@@ -78,48 +78,6 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 不开同步服务、不填对方地址时，应用不会发起任何网络请求；也没有任何域名或云端地址硬编码。
 
-## 为什么是重写而不是改包
-
-原目标 App（`homeworkout.homeworkouts.noequipment`）的启动链路依赖 Google UMP 同意 SDK
-与广告/计费服务，在国内网络下初始化抛异常，被其 `catch (Throwable) → killProcess()`
-兜底逻辑静默杀死，表现为「点了图标就闪退」。本项目从零实现，不引入任何此类依赖。
-
-**设计语言借鉴的边界**：圆角尺度、间距节奏、配色属于公开设计模式，予以借鉴并对齐到规格；
-原 App 的图标、动作插画、动画、文案均未使用。
-
-样本 `base.apk` 是 Play 的 split base，缺 `base__abi` / `base__density`，单独
-`adb install` 会报 `INSTALL_FAILED_MISSING_SPLIT`；base 内也没有 `liblpcore.so`。
-因此没有用原包做运行时对照，设计规格来自 apktool 反编译出的 504 个 layout 与资源表。
-
-## 设计规格（从样本 APK 资源里量出来的）
-
-| 项目 | 值 | 出处 |
-|---|---|---|
-| 底色 | `#F8F8F8` | `colors.xml / bgColor` |
-| 卡片 | `#FFFFFF` | — |
-| 主色 | `#004AFF` | `colorAccent` |
-| 主渐变 | `#0075FF → #004AFF`，横向 0° | `gradient_start` / `gradient_end` |
-| 强调块渐变 | `#0B9EFF → #004AFF` | `bg_widget_streak_gradient` |
-| 主文字 | `#1C212C` | `colorDark` |
-| 次级文字 | `#888888` | `gray_888` |
-| 大卡圆角 | 22.5dp | `r30 × 0.75` |
-| 卡片圆角 | 18.75dp | `r25 × 0.75` |
-| 胶囊 | 全圆角 | `bg_round_gradient_r25_ripple` |
-| 正文字号 | 14 / 13 / 12sp | 布局中频次最高的三档 |
-| 字体 | Outfit（SIL OFL，可商用） | `assets/fonts/outfit.ttf` |
-
-关键细节：它的 `dp_*` 尺寸表被整体缩放了 **0.75**，所以 `r30` 实际是 22.5dp 而不是 30dp。
-照名字抄会得到偏大的圆角——这是「看着像但总觉得不对」的常见原因。
-
-### 两个平台差异带来的坑
-
-- `ListView` 会丢弃 item XML 上的 `layout_margin`（走 `AbsListView.generateLayoutParams`，
-  只读宽高），卡片间距只能用 `dividerHeight` 实现——动作库的 12dp 间距就是这么来的
-- 往纵向 `LinearLayout` 里 `addView(child)` 默认参数是 **MATCH_PARENT 宽**，
-  父容器 `setGravity(CENTER)` 对撑满宽度的子 View 无效，要居中的文字得显式给
-  `WRAP_CONTENT` + `Gravity.CENTER`
-- 子 View 会盖住父容器的圆角，须配合 `setClipToOutline(true)` 才能裁进圆角内
-
 ## 动作演示：矢量化重制
 
 数据集提供的缩略图与 GIF 原生只有 **180×180**。旧版 320/360 输出是裁边后的 LANCZOS
@@ -135,11 +93,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
    WebP 以 q84 / q58 编码，`noCompress` 保证 `ImageDecoder` 可随机访问
 
 矢量化不是凭空补细节：180px 源图没有的高频信息不会出现，它只是把插值糊边换成干净
-路径并保留原笔触。要真正 4K 级细节，需要更高分辨率的授权原片。
-
-- 动作条目、英文名、肌群、中文分步要领：`hasaneyldrm/exercises-dataset`（**MIT**）
-- 缩略图与演示 GIF：**© Gym visual**（<https://gymvisual.com/>），已购授权，
-  详情页与 README 均保留署名；授权素材不随本仓库分发
+路径并保留原笔触。要真正 4K 级细节，需要更高分辨率的原片。
 
 渲染（`PhotoView.java`）：
 
@@ -249,74 +203,12 @@ BMR 1699、去脂 59.88，两版完全一致）。
 `{"ok":true,"added":2,"days":1,"weights":1,"sessions":2}`，同一份再推一次各项全 0
 （去重生效）。非本应用快照会被拒绝合并，避免误推别人的 JSON 把数据洗干净。
 
-## 构建
-
-```bash
-export JAVA_HOME=D:/CodeDevelop/Env/jdk-17
-export ANDROID_HOME=D:/CodeDevelop/Env/AndroidSDK
-./gradlew assembleDebug
-# 产物 app/build/outputs/apk/debug/app-debug.apk
-```
-
-工具链 Gradle 9.3.1 + AGP 9.1.0 + JDK 17，minSdk 26 / targetSdk 36。
-动图播放依赖 API 28 的 `AnimatedImageDrawable`，API 26/27 自动回退为静态缩略图。
-
-数据与媒体重建（需要把已授权的数据集仓库放在 `E:/Code/Gym`）：
-
-```bash
-python -m pip install pillow "vtracer==0.6.15" "resvg_py==0.5.0"
-python tools/build_gym.py             # 翻译/整理 1324 条 → assets/exercises.json
-python tools/build_media_vector.py    # 矢量化 → assets/img、assets/anim
-python tools/build_boxes.py           # 主体框归一化 → assets/boxes.json（约 1 分 50 秒）
-# 只重做某一类：
-# python tools/build_media_vector.py --mode stills
-# python tools/build_media_vector.py --mode anims
-# python tools/build_media.py         # 旧版位图流水线，保留作回退
-```
-
-演示素材不随仓库分发（见 `.gitignore`）：克隆后必须先放好授权数据集并跑一次
-`build_media_vector.py`，否则动作图与动图为空。
-
-## 代码结构
-
-```
-app/src/main/java/com/yuanlian/app/
-├─ Data.java / Exercise.java / PlanProfile.java   数据加载、动作模型、计划条件
-├─ Store.java                                     SharedPreferences 全部读写
-├─ MainActivity / DiscoverActivity / PlanActivity 首页、发现、定制
-├─ LibraryActivity / ReplaceSheet                 动作库列表与换动作弹层
-├─ WorkoutActivity / ResultActivity               训练与完成
-├─ ReportActivity / DayDetailActivity / StreakActivity  报告、单日详情、连续天数
-├─ BodyActivity / ScaleActivity                  身体成分与体脂秤
-├─ BleScale.java                                  AntAF 私有 GATT 协议移植
-├─ BodyComp.java                                  BIA 18 项体成分公式
-├─ LanServer / LanSync / SyncActivity / SyncPrefs 手机间同步
-├─ PhotoView / IconView / TimerRingView / WeightChartView / QuickChartView / RulerSlider
-├─ Ui.java / UiList.java                         dp、圆角、颜色、列表工厂等工具
-└─ Reminder* / Voice* / BootReceiver              提醒调度、TTS 与开机恢复
-```
-
 ## 更新记录
 
 **1.6** — 体重与体成分（蓝牙体脂秤、18 项 BIA 指标、测量记录）、手机间局域网同步、
 应用更名「私人健身教练」、蓝底渐变自适应图标、连续天数详情、训练页统一纯白底、
 动作库卡片间距与发现页「为你精选」圆角修正。
 
-**1.5** — 动作素材矢量化重制（640 动画 / 960 静图）、主体框归一化、补齐原包交互。
+**1.5** — 动作素材矢量化重制（640 动画 / 960 静图）、主体框归一化、补齐交互细节。
 
-**1.0** — 从零重写，取代依赖 Google UMP 的原 App，实现训练主链路与本地数据。
-
-## 应用图标
-
-蓝底 + 展臂展示肌肉的线条剪影，图形由项目作者提供。母版是矢量文件 [art/icon.svg](art/icon.svg)，
-Android 端为 Adaptive Icon：背景是渐变 drawable，前景是 VectorDrawable（另带 Android 13
-单色图标），系统按任意密度实时栅格化，不存在放大插值。
-
-## 版权
-
-- 应用图标：项目作者提供的 SVG 图形
-- 动作条目 / 肌群 / 中文要领：`exercises-dataset`（**MIT**）
-- 演示图与动图：**© Gym visual**（<https://gymvisual.com/>），已购授权；
-  详情页与截图页保留署名字样；授权素材不随本仓库分发
-- 字体 Outfit：SIL Open Font License
-- 原目标 App 的图标、插画、动画、文案均未使用
+**1.0** — 首个版本，训练主链路与本地数据。

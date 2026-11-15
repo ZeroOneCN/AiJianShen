@@ -80,7 +80,7 @@ public final class Ui {
         return Math.round(dp(c, v));
     }
 
-    /** 可变字体按字重取实例，Outfit 为 SIL OFL 授权。 */
+    /** 可变字体按字重取实例。 */
     public static Typeface typeface(Context c, int weight) {
         Typeface cached = TYPEFACES.get(weight);
         if (cached != null) {
