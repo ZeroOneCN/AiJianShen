@@ -75,6 +75,12 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.DUMBBELL, Ui.BLUE_TILE, "动作库",
                 Data.all().size() + " 个动作，可搜索、看要领", false,
                 v -> startActivity(new Intent(this, LibraryActivity.class)));
+        addRow(main, IconView.RACK, Ui.PURPLE, "我的训练",
+                "自己挑动作存成模板，随时一键开练", false,
+                v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        addRow(main, IconView.TROPHY, Ui.GREEN, "成就",
+                "已点亮 " + Achievements.earned(this) + " 枚徽章", false,
+                v -> startActivity(new Intent(this, AchievementsActivity.class)));
         addRow(main, IconView.SLIDERS, Ui.ORANGE, "训练设置",
                 "预备、休息、语音、音乐与提示音", false,
                 v -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
@@ -90,6 +96,11 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.WIFI, Ui.BLUE_TILE, "手机间同步",
                 "换手机时把训练与体重数据搬过去", false,
                 v -> startActivity(new Intent(this, SyncActivity.class)));
+        addRow(main, IconView.SHARE, Ui.TEAL, "导出备份",
+                "把全部记录写成一个 JSON 文件", false, v -> exportData());
+        addRow(main, IconView.REFRESH, Ui.SLATE, "从备份恢复",
+                "读取 JSON 文件，按并集合并，不会覆盖本机记录", false,
+                v -> importData());
         addRow(main, IconView.SCALE, Ui.BLUE_TILE, "连接体脂秤",
                 "蓝牙直连，读体重与体脂率", false,
                 v -> startActivity(new Intent(this, ScaleActivity.class)));
@@ -112,9 +123,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.7" : v;
+            return v == null || v.isEmpty() ? "1.8" : v;
         } catch (Exception e) {
-            return "1.7";
+            return "1.8";
         }
     }
 
@@ -214,6 +225,84 @@ public class SettingsActivity extends Activity {
 
     private void info(String title, String message) {
         dialog(title, message, "知道了", Ui.ACCENT, null);
+    }
+
+    // ---- 备份：导出/恢复都走系统文件选择器，不碰任何网络 ----
+
+    private static final int REQ_EXPORT = 2001;
+    private static final int REQ_IMPORT = 2002;
+
+    private void exportData() {
+        Intent it = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        it.addCategory(Intent.CATEGORY_OPENABLE);
+        it.setType("application/json");
+        it.putExtra(Intent.EXTRA_TITLE,
+                "yuanlian-" + Store.key(java.util.Calendar.getInstance()) + ".json");
+        try {
+            startActivityForResult(it, REQ_EXPORT);
+        } catch (Exception e) {
+            Toast.makeText(this, "这台设备没有可用的文件选择器", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void importData() {
+        Intent it = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        it.addCategory(Intent.CATEGORY_OPENABLE);
+        it.setType("*/*");
+        it.putExtra(Intent.EXTRA_MIME_TYPES,
+                new String[]{"application/json", "text/plain", "application/octet-stream"});
+        try {
+            startActivityForResult(it, REQ_IMPORT);
+        } catch (Exception e) {
+            Toast.makeText(this, "这台设备没有可用的文件选择器", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        android.net.Uri uri = data.getData();
+        if (requestCode == REQ_EXPORT) {
+            try (java.io.OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) {
+                    throw new java.io.IOException("无法写入");
+                }
+                os.write(LanSync.snapshot(this).toString()
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                os.flush();
+                Toast.makeText(this, "已导出，建议另存一份到电脑", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQ_IMPORT) {
+            try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+                if (in == null) {
+                    throw new java.io.IOException("无法读取");
+                }
+                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int n;
+                while ((n = in.read(buf)) > 0) {
+                    bos.write(buf, 0, n);
+                }
+                String text = new String(bos.toByteArray(),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                Store.MergeStats st = LanSync.merge(this, new org.json.JSONObject(text));
+                if (st.nothing()) {
+                    Toast.makeText(this, "没有新数据，本机已经包含了这份备份",
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "已恢复：新增 " + st.days + " 个训练日、"
+                            + st.sessions + " 条训练记录、" + st.weights + " 条体重",
+                            Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "这份文件不是本应用的备份", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void dialog(String titleText, String message, String primary,

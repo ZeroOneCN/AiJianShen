@@ -145,8 +145,57 @@ public class MainActivity extends Activity {
         renderWeekGoal();
         renderCoach();
         renderChallenges();
+        renderQuick();
         renderFocus();
         renderPlan();
+    }
+
+    /** 快捷入口：5 分钟微训练、我的训练、成就。 */
+    private void renderQuick() {
+        LinearLayout box = findViewById(R.id.quick_card);
+        box.removeAllViews();
+        LinearLayout card = UiList.card(this);
+        box.addView(card);
+
+        int tpl = Store.templates(this).size();
+        UiList.row(this, card, IconView.BOLT, Ui.ORANGE, "5 分钟微训练",
+                "随机 4 个徒手动作，一个动作 60 秒，不挑场地",
+                false, v -> startQuick());
+        UiList.row(this, card, IconView.DUMBBELL, Ui.PURPLE, "我的训练",
+                tpl > 0 ? tpl + " 个自己编排的训练，点一下开练"
+                        : "挑几个动作存成模板，以后一键开练", false,
+                v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        UiList.row(this, card, IconView.TROPHY, Ui.GREEN, "成就",
+                "已点亮 " + Achievements.earned(this) + " 枚，看看下一个差多少", true,
+                v -> startActivity(new Intent(this, AchievementsActivity.class)));
+        box.setVisibility(View.VISIBLE);
+    }
+
+    /** 随机挑几个不用器械的力量/核心动作，凑一段五分钟。 */
+    private void startQuick() {
+        List<Exercise> pool = new java.util.ArrayList<>();
+        for (Exercise e : Data.all()) {
+            boolean bare = e.gear == null || e.gear.isEmpty();
+            boolean strength = "力量".equals(e.kind) || "核心".equals(e.kind);
+            if (bare && strength) {
+                pool.add(e);
+            }
+        }
+        java.util.Collections.shuffle(pool);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(4, pool.size()); i++) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(pool.get(i).id);
+        }
+        Intent it = new Intent(this, WorkoutActivity.class);
+        it.putExtra(WorkoutActivity.EXTRA_IDS, sb.toString());
+        it.putExtra(WorkoutActivity.EXTRA_ROUNDS, 1);
+        it.putExtra(WorkoutActivity.EXTRA_SECONDS, 60);
+        it.putExtra(WorkoutActivity.EXTRA_REST, 15);
+        it.putExtra(WorkoutActivity.EXTRA_TITLE, "5 分钟微训练");
+        startActivity(it);
     }
 
     private void renderStreak() {

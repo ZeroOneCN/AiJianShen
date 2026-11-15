@@ -40,6 +40,8 @@ public final class Store {
     private static final String K_SEX = "sex";
     private static final String K_FAV = "favorites";
     private static final String K_PENDING = "pending_workout";
+    private static final String K_PR = "personal_records";
+    private static final String K_TMPL = "my_workouts";
 
     private Store() {
     }
@@ -73,14 +75,20 @@ public final class Store {
     }
 
     public static void markDone(Context c, Calendar cal, int minutes, String title, int count) {
-        markDone(c, cal, minutes, title, count, -1);
+        markDone(c, cal, minutes, title, count, -1, null);
+    }
+
+    public static void markDone(Context c, Calendar cal, int minutes, String title, int count,
+                                int kcal) {
+        markDone(c, cal, minutes, title, count, kcal, null);
     }
 
     /**
      * @param kcal 本次消耗；-1 表示没有算（旧版补记），展示时按分钟数回退估算
+     * @param ids  本次练过的动作 id（逗号分隔）；用来统计部位分布与「练过多少个动作」
      */
     public static void markDone(Context c, Calendar cal, int minutes, String title, int count,
-                                int kcal) {
+                                int kcal, String ids) {
         Set<String> dates = new HashSet<>(sp(c).getStringSet(K_DATES, new HashSet<String>()));
         dates.add(key(cal));
         JSONObject dayMap = dayMap(c);
@@ -97,6 +105,7 @@ public final class Store {
         s.count = count;
         s.kcal = kcal;
         s.feel = -1;
+        s.ids = ids == null ? "" : ids;
         log.add(0, s);
         while (log.size() > 400) {
             log.remove(log.size() - 1);
@@ -284,6 +293,8 @@ public final class Store {
         public int kcal = -1;
         /** -1 未选择，0 太轻松，1 刚刚好，2 太吃力 */
         public int feel = -1;
+        /** 本次练过的动作 id，逗号分隔；旧记录为空串。 */
+        public String ids = "";
     }
 
     public static List<Session> sessions(Context c) {
@@ -300,6 +311,7 @@ public final class Store {
                 s.count = o.optInt("c", 0);
                 s.kcal = o.optInt("k", -1);
                 s.feel = o.optInt("f", -1);
+                s.ids = o.optString("x", "");
                 out.add(s);
             }
         } catch (Exception ignored) {
@@ -321,6 +333,9 @@ public final class Store {
                     o.put("k", s.kcal);
                 }
                 o.put("f", s.feel);
+                if (s.ids != null && !s.ids.isEmpty()) {
+                    o.put("x", s.ids);
+                }
             } catch (Exception ignored) {
             }
             arr.put(o);
@@ -418,6 +433,226 @@ public final class Store {
         }
         sp(c).edit().putStringSet(K_FAV, ids).apply();
         return on;
+    }
+
+    // ---- 个人纪录：每个动作练过多少组、单组最长坚持多久 ----
+
+    public static class Pr {
+        public String id = "";
+        /** 单组最长坚持的秒数 */
+        public int bestSeconds;
+        /** 累计完成组数 */
+        public int sets;
+        /** 最近一次练的时间 */
+        public long last;
+    }
+
+    public static Map<String, Pr> prs(Context c) {
+        Map<String, Pr> out = new LinkedHashMap<>();
+        try {
+            JSONObject all = new JSONObject(sp(c).getString(K_PR, "{}"));
+            java.util.Iterator<String> it = all.keys();
+            while (it.hasNext()) {
+                String id = it.next();
+                JSONObject o = all.optJSONObject(id);
+                if (o == null) {
+                    continue;
+                }
+                Pr p = new Pr();
+                p.id = id;
+                p.bestSeconds = o.optInt("s", 0);
+                p.sets = o.optInt("n", 0);
+                p.last = o.optLong("t", 0);
+                out.put(id, p);
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    public static Pr pr(Context c, String id) {
+        return id == null || id.isEmpty() ? null : prs(c).get(id);
+    }
+
+    /** 练过多少个不同的动作。 */
+    public static int prCount(Context c) {
+        return prs(c).size();
+    }
+
+    /**
+     * 记一组完成。
+     *
+     * @return true 表示刷新了这个动作的单组最长纪录（第一次练也算「新纪录」）
+     */
+    public static boolean recordPr(Context c, String id, int seconds) {
+        if (id == null || id.isEmpty() || seconds <= 0) {
+            return false;
+        }
+        Map<String, Pr> all = prs(c);
+        Pr p = all.get(id);
+        boolean fresh = p == null || seconds > p.bestSeconds;
+        if (p == null) {
+            p = new Pr();
+            p.id = id;
+            all.put(id, p);
+        }
+        if (seconds > p.bestSeconds) {
+            p.bestSeconds = seconds;
+        }
+        p.sets += 1;
+        p.last = System.currentTimeMillis();
+        JSONObject o = new JSONObject();
+        try {
+            for (Pr v : all.values()) {
+                JSONObject j = new JSONObject();
+                j.put("s", v.bestSeconds);
+                j.put("n", v.sets);
+                j.put("t", v.last);
+                o.put(v.id, j);
+            }
+        } catch (Exception ignored) {
+        }
+        sp(c).edit().putString(K_PR, o.toString()).apply();
+        return fresh;
+    }
+
+    // ---- 我的训练：自己挑动作存成模板，随时一键开练 ----
+
+    public static class Template {
+        public String id = "";
+        public String name = "";
+        public List<String> ids = new ArrayList<>();
+        public int rounds = 1;
+        public int seconds = 40;
+        public int rest = 20;
+        public long created;
+
+        public int totalMinutes() {
+            int one = ids.size() * (seconds + rest);
+            return Math.max(1, Math.round(one * Math.max(1, rounds) / 60f));
+        }
+
+        public String summary() {
+            return ids.size() + " 个动作 · " + rounds + " 轮 · 约 " + totalMinutes() + " 分钟";
+        }
+    }
+
+    public static List<Template> templates(Context c) {
+        List<Template> out = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONArray(sp(c).getString(K_TMPL, "[]"));
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                Template t = new Template();
+                t.id = o.optString("id", "");
+                t.name = o.optString("n", "我的训练");
+                t.rounds = Math.max(1, o.optInt("r", 1));
+                t.seconds = Math.max(10, o.optInt("s", 40));
+                t.rest = Math.max(0, o.optInt("t", 20));
+                t.created = o.optLong("at", 0);
+                String ids = o.optString("x", "");
+                if (!ids.isEmpty()) {
+                    for (String one : ids.split(",")) {
+                        if (!one.isEmpty()) {
+                            t.ids.add(one);
+                        }
+                    }
+                }
+                out.add(t);
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    public static Template template(Context c, String id) {
+        for (Template t : templates(c)) {
+            if (t.id.equals(id)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    /** 按 id 保存：已存在则覆盖，不存在则新建。 */
+    public static void saveTemplate(Context c, Template t) {
+        if (t == null) {
+            return;
+        }
+        if (t.id == null || t.id.isEmpty()) {
+            t.id = "t" + System.currentTimeMillis();
+        }
+        if (t.created == 0) {
+            t.created = System.currentTimeMillis();
+        }
+        List<Template> all = templates(c);
+        boolean replaced = false;
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id.equals(t.id)) {
+                all.set(i, t);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            all.add(t);
+        }
+        JSONArray arr = new JSONArray();
+        for (Template v : all) {
+            JSONObject o = new JSONObject();
+            try {
+                o.put("id", v.id);
+                o.put("n", v.name);
+                o.put("r", v.rounds);
+                o.put("s", v.seconds);
+                o.put("t", v.rest);
+                o.put("at", v.created);
+                StringBuilder sb = new StringBuilder();
+                for (String one : v.ids) {
+                    if (sb.length() > 0) {
+                        sb.append(',');
+                    }
+                    sb.append(one);
+                }
+                o.put("x", sb.toString());
+            } catch (Exception ignored) {
+            }
+            arr.put(o);
+        }
+        sp(c).edit().putString(K_TMPL, arr.toString()).apply();
+    }
+
+    public static void deleteTemplate(Context c, String id) {
+        List<Template> all = templates(c);
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id.equals(id)) {
+                all.remove(i);
+                break;
+            }
+        }
+        JSONArray arr = new JSONArray();
+        for (Template v : all) {
+            JSONObject o = new JSONObject();
+            try {
+                o.put("id", v.id);
+                o.put("n", v.name);
+                o.put("r", v.rounds);
+                o.put("s", v.seconds);
+                o.put("t", v.rest);
+                o.put("at", v.created);
+                StringBuilder sb = new StringBuilder();
+                for (String one : v.ids) {
+                    if (sb.length() > 0) {
+                        sb.append(',');
+                    }
+                    sb.append(one);
+                }
+                o.put("x", sb.toString());
+            } catch (Exception ignored) {
+            }
+            arr.put(o);
+        }
+        sp(c).edit().putString(K_TMPL, arr.toString()).apply();
     }
 
     // ---- 中断的训练：把进度留在本机，下次接着练 ----

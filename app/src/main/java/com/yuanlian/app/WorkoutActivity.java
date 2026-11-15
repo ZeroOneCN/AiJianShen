@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +28,11 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class WorkoutActivity extends Activity {
 
@@ -35,6 +40,12 @@ public class WorkoutActivity extends Activity {
     public static final String EXTRA_SINGLE = "single_exercise";
     /** 从首页「继续上次训练」进来：恢复上次没做完的进度。 */
     public static final String EXTRA_RESUME = "resume_pending";
+    /** 自定义序列：「我的训练」模板与「5 分钟微训练」用它直接开练。 */
+    public static final String EXTRA_IDS = "custom_ids";
+    public static final String EXTRA_ROUNDS = "custom_rounds";
+    public static final String EXTRA_SECONDS = "custom_seconds";
+    public static final String EXTRA_REST = "custom_rest";
+    public static final String EXTRA_TITLE = "custom_title";
 
     private static class Step {
         final boolean rest;
@@ -64,6 +75,8 @@ public class WorkoutActivity extends Activity {
     private boolean paused = false;
     private boolean finished = false;
 
+    /** 已经响过的最后几秒，避免 200ms 刷新把同一个数字响很多遍。 */
+    private int lastBeep = -1;
     /** 当前步骤结束的绝对时刻（elapsedRealtime），所有剩余秒数都从它反推。 */
     private long deadline = 0;
     /** 是否仍在预备倒计时。 */
@@ -88,6 +101,11 @@ public class WorkoutActivity extends Activity {
     private Data.Day day;
     private PlanProfile profile;
     private String sessionTitle = "";
+    /** 自定义序列（逗号分隔的动作 id）；为空表示按计划或单个动作练。 */
+    private String customIds = "";
+    private int customRounds = 1;
+    private int customSeconds = 0;
+    private int customRest = -1;
     private Store.WorkoutPrefs prefs;
     private Voice voice;
     private MediaPlayer music;
@@ -101,7 +119,10 @@ public class WorkoutActivity extends Activity {
     private int resultMinutes;
     private int resultCount;
     private int resultKcal;
+    /** 本次刷新了几个动作的个人纪录。 */
+    private int resultPr;
     private boolean sessionMarked;
+    private boolean recordsCounted;
     private boolean resultOpened;
     /** 休息中才显示的两个快捷按钮，避免和「暂停」抢位置。 */
     private LinearLayout restActions;
@@ -143,6 +164,11 @@ public class WorkoutActivity extends Activity {
             if (s.remaining != rem) {
                 s.remaining = rem;
                 paintTime();
+                // 最后 3 秒滴答，提醒收尾；每档只响一次
+                if (rem > 0 && rem <= 3 && rem != lastBeep) {
+                    lastBeep = rem;
+                    cue(WorkoutCues.TICK, 0, "");
+                }
             }
             if (rem <= 0) {
                 advance();
@@ -219,6 +245,11 @@ public class WorkoutActivity extends Activity {
                 Store.overrides(this, dayIndex));
 
         single = getIntent().getStringExtra(EXTRA_SINGLE);
+        String ids = getIntent().getStringExtra(EXTRA_IDS);
+        customIds = ids == null ? "" : ids;
+        customRounds = Math.max(1, getIntent().getIntExtra(EXTRA_ROUNDS, 1));
+        customSeconds = Math.max(0, getIntent().getIntExtra(EXTRA_SECONDS, 0));
+        customRest = getIntent().getIntExtra(EXTRA_REST, -1);
         boolean resume = getIntent().getBooleanExtra(EXTRA_RESUME, false);
         Store.Pending pending = resume ? Store.pending(this) : null;
 
@@ -237,7 +268,10 @@ public class WorkoutActivity extends Activity {
             return;
         }
 
-        if (single != null) {
+        String customTitle = getIntent().getStringExtra(EXTRA_TITLE);
+        if (customTitle != null && !customTitle.isEmpty()) {
+            sessionTitle = customTitle;
+        } else if (single != null) {
             sessionTitle = single;
         } else {
             sessionTitle = day.title;
@@ -304,7 +338,15 @@ public class WorkoutActivity extends Activity {
 
     private void buildSteps(String single) {
         List<Exercise> list = new ArrayList<>();
-        if (single != null) {
+        boolean custom = customIds != null && !customIds.isEmpty();
+        if (custom) {
+            for (String id : customIds.split(",")) {
+                Exercise one = Data.byId(id);
+                if (one != null) {
+                    list.add(one);
+                }
+            }
+        } else if (single != null) {
             Exercise one = Data.get(single);
             if (one != null) {
                 list.add(one);
@@ -320,9 +362,10 @@ public class WorkoutActivity extends Activity {
                 }
             }
         }
-        int rounds = single != null ? 1 : day.rounds;
-        int seconds = single != null ? list.get(0).seconds : day.seconds;
-        int rest = prefs.restFor(day.restSeconds);
+        int rounds = custom ? customRounds : (single != null ? 1 : day.rounds);
+        int seconds = custom && customSeconds > 0 ? customSeconds
+                : (single != null ? list.get(0).seconds : day.seconds);
+        int rest = prefs.restFor(custom && customRest >= 0 ? customRest : day.restSeconds);
         for (int r = 0; r < rounds; r++) {
             for (int i = 0; i < list.size(); i++) {
                 Exercise e = list.get(i);
@@ -411,6 +454,7 @@ public class WorkoutActivity extends Activity {
         if (s.remaining <= 0) {
             s.remaining = s.total;
         }
+        lastBeep = -1;
         deadline = now + s.remaining * 1000L;
         if (resumedAt == 0) {
             resumedAt = now;
@@ -736,11 +780,32 @@ public class WorkoutActivity extends Activity {
         if (resultKcal <= 0) {
             resultKcal = Kcal.rough(resultMinutes);
         }
+        // 本次真正练过的动作：写进训练记录（部位分布要用），同时刷新个人纪录
+        Set<String> played = new LinkedHashSet<>();
+        Map<String, Integer> bestOf = new LinkedHashMap<>();
+        for (Step s : steps) {
+            if (s.rest || s.exercise == null || s.spent <= 0) {
+                continue;
+            }
+            played.add(s.exercise.id);
+            Integer old = bestOf.get(s.exercise.id);
+            if (old == null || s.spent > old) {
+                bestOf.put(s.exercise.id, s.spent);
+            }
+        }
         if (!sessionMarked) {
             Store.markDone(this, Calendar.getInstance(), resultMinutes,
-                    sessionTitle, resultCount, resultKcal);
+                    sessionTitle, resultCount, resultKcal, TextUtils.join(",", played));
             Store.clearPending(this);
             sessionMarked = true;
+        }
+        if (!recordsCounted) {
+            for (Map.Entry<String, Integer> e : bestOf.entrySet()) {
+                if (Store.recordPr(this, e.getKey(), e.getValue())) {
+                    resultPr++;
+                }
+            }
+            recordsCounted = true;
         }
         paintRestActions(false);
         photo.setAlpha(0.55f);
@@ -775,6 +840,13 @@ public class WorkoutActivity extends Activity {
         it.putExtra(ResultActivity.EXTRA_MINUTES, resultMinutes);
         it.putExtra(ResultActivity.EXTRA_COUNT, resultCount);
         it.putExtra(ResultActivity.EXTRA_KCAL, resultKcal);
+        it.putExtra(ResultActivity.EXTRA_PR, resultPr);
+        if (customIds != null && !customIds.isEmpty()) {
+            it.putExtra(EXTRA_IDS, customIds);
+            it.putExtra(EXTRA_ROUNDS, customRounds);
+            it.putExtra(EXTRA_SECONDS, customSeconds);
+            it.putExtra(EXTRA_REST, customRest);
+        }
         startActivity(it);
         finish();
     }
