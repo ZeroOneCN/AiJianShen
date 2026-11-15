@@ -66,15 +66,25 @@ public class Exercise {
     }
 
     /** 训练页展示用：取前两步要领，过长自动截断。 */
+    /** 训练页只需要一句提示：优先整句，其次在句号处截断，不要半句加省略号。 */
     public String brief() {
         if (steps.isEmpty()) {
             return "";
         }
-        StringBuilder sb = new StringBuilder(steps.get(0));
-        if (steps.size() > 1) {
-            sb.append(" ").append(steps.get(1));
+        String s = steps.get(0).replace("首先，", "").replace("首先", "").trim();
+        if (s.length() < 26 && steps.size() > 1) {
+            s = s + " " + steps.get(1);
         }
-        String s = sb.toString().replace("首先，", "").replace("首先", "");
-        return s.length() > 96 ? s.substring(0, 96) + "…" : s;
+        if (s.length() <= 78) {
+            return s;
+        }
+        int cut = -1;
+        for (int i = 0; i < 78; i++) {
+            char c = s.charAt(i);
+            if (c == '。' || c == '；') {
+                cut = i + 1;
+            }
+        }
+        return cut > 30 ? s.substring(0, cut) : s.substring(0, 78) + "…";
     }
 }

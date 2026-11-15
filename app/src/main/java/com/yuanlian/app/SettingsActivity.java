@@ -72,31 +72,37 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.DUMBBELL, Ui.BLUE_TILE, "动作库",
                 Data.all().size() + " 个动作，可搜索、看要领", false,
                 v -> startActivity(new Intent(this, LibraryActivity.class)));
-        addRow(main, IconView.MUSIC, Ui.ORANGE, "训练设置",
+        addRow(main, IconView.SLIDERS, Ui.ORANGE, "训练设置",
                 "预备、休息、语音、音乐与提示音", false,
                 v -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
         addRow(main, IconView.SETTINGS, Ui.SLATE, "通用设置",
                 "体重单位、身高与提醒", false,
                 v -> startActivity(new Intent(this, GeneralSettingsActivity.class)));
-        addRow(main, IconView.INFO, Ui.PURPLE, "语音播报",
+        addRow(main, IconView.SPEAKER, Ui.PURPLE, "语音播报",
                 "使用系统中文语音，可试听", false,
                 v -> startActivity(new Intent(this, VoiceSettingsActivity.class)));
         addRow(main, IconView.CLOCK, Ui.RED, "训练提醒",
                 "按固定时间发本地通知", false,
                 v -> startActivity(new Intent(this, ReminderActivity.class)));
-        addRow(main, IconView.INFO, Ui.TEAL, "数据与隐私",
-                "不联网、无账号、无云端同步", false,
+        addRow(main, IconView.WIFI, Ui.BLUE_TILE, "手机间同步",
+                "换手机时把训练与体重数据搬过去", false,
+                v -> startActivity(new Intent(this, SyncActivity.class)));
+        addRow(main, IconView.SCALE, Ui.BLUE_TILE, "连接体脂秤",
+                "蓝牙直连，读体重与体脂率", false,
+                v -> startActivity(new Intent(this, ScaleActivity.class)));
+        addRow(main, IconView.SHIELD, Ui.TEAL, "数据与隐私",
+                "本机存储，网络仅用于手机间同步", false,
                 v -> info("数据与隐私",
-                        "训练记录、体重、身高、计划条件与训练偏好只保存在本机，不联网、不上传，也没有账号体系。\n\n训练提醒使用系统本地通知，不需要联网，也不会读取联系人。\n\n卸载应用或在下方清除记录后，数据会被删除。\n\n动作演示媒体来自已购授权的 Gym visual，仅在本机应用内展示。"));
+                        "训练记录、体重、身高、计划条件与训练偏好只保存在本机，没有账号体系，也不上传到任何服务器。\n\n蓝牙只用于连接你自己的体脂秤，读取重量与阻抗；体成分由本机按 BIA 公式估算。\n\n手机间同步是可选项：只有你主动开启同步服务或填写对方地址时，应用才会在同一 Wi-Fi 下与另一台手机交换数据；平时不发起任何网络请求。\n\n训练提醒使用系统本地通知，不需要联网，也不会读取联系人。\n\n卸载应用或在下方清除记录后，数据会被删除。\n\n动作演示媒体来自已购授权的 Gym visual，仅在本机应用内展示。"));
         addRow(main, IconView.TRASH, Ui.RED, "清除训练记录",
                 "保留定制计划与个人数据，只删除训练记录", true,
                 v -> confirmClear());
 
         addRow(more, IconView.SHARE, Ui.SLATE, "分享给朋友", null, false,
                 v -> share());
-        addRow(more, IconView.STAR, Ui.SLATE, "关于圆练", "版本、素材与许可", true,
-                v -> info("关于圆练",
-                        "圆练 1.6\n\n动作条目与中文要领：exercises-dataset（MIT）。\n动作演示媒体：© Gym visual，已购授权，仅本机使用。\n界面素材与品牌图形：圆练项目自有。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+        addRow(more, IconView.STAR, Ui.SLATE, "关于私人健身教练", "版本、素材与许可", true,
+                v -> info("关于私人健身教练",
+                        "私人健身教练 1.6\n\n动作条目与中文要领：exercises-dataset（MIT）。\n动作演示媒体：© Gym visual，已购授权，仅本机使用。\n界面素材与品牌图形：私人健身教练项目自有。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
     }
 
     @Override
@@ -180,8 +186,8 @@ public class SettingsActivity extends Activity {
         Intent send = new Intent(Intent.ACTION_SEND);
         send.setType("text/plain");
         send.putExtra(Intent.EXTRA_TEXT,
-                "我在用圆练：一个纯本地、不联网的徒手训练应用。动作库加一周定制计划，练完只记在本机。");
-        startActivity(Intent.createChooser(send, "分享圆练"));
+                "我在用私人健身教练：一个纯本地、不联网的徒手训练应用。动作库加一周定制计划，练完只记在本机。");
+        startActivity(Intent.createChooser(send, "分享私人健身教练"));
     }
 
     private void confirmClear() {

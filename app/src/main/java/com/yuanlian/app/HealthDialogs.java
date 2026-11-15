@@ -24,6 +24,16 @@ public final class HealthDialogs {
     }
 
     public static void recordWeight(Activity a, Runnable after) {
+        recordWeight(a, after, null);
+    }
+
+    /**
+     * 记录体重。
+     *
+     * @param onKg 保存成功后的回调，参数为千克值；用于同时写一条带时间戳的体成分记录
+     */
+    public static void recordWeight(Activity a, Runnable after,
+                                    java.util.function.DoubleConsumer onKg) {
         boolean lb = Store.isLb(a);
         String unit = lb ? "lb" : "kg";
         Dialog dialog = base(a, "记录体重", "只保存在本机，用于趋势和 BMI。");
@@ -61,6 +71,9 @@ public final class HealthDialogs {
                 return;
             }
             Store.addWeight(a, Store.key(Calendar.getInstance()), kg);
+            if (onKg != null) {
+                onKg.accept(kg);
+            }
             if (after != null) {
                 after.run();
             }

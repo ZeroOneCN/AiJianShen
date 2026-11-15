@@ -153,16 +153,6 @@ public final class Ui {
         return d;
     }
 
-    /** 引导页的主行动按钮：深色渐变胶囊。 */
-    public static GradientDrawable gradientDarkPill(Context c) {
-        GradientDrawable d = new GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{0xFF3A3A3A, DARK_2});
-        d.setShape(GradientDrawable.RECTANGLE);
-        d.setCornerRadius(dp(c, R_PILL));
-        return d;
-    }
-
     /** 蓝色实心渐变胶囊，和原包 CTA 同一条蓝。 */
     public static GradientDrawable gradientBluePill(Context c) {
         GradientDrawable d = new GradientDrawable(

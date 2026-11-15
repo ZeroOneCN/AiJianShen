@@ -200,8 +200,8 @@ public class ReminderActivity extends Activity {
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED;
             if (!ok) {
                 InfoDialog.show(this, "通知未开启",
-                        "训练提醒已经保存在本机，但系统还没有允许圆练发送通知。\n\n"
-                                + "可以到系统设置 → 应用 → 圆练 → 通知中手动允许，"
+                        "训练提醒已经保存在本机，但系统还没有允许私人健身教练发送通知。\n\n"
+                                + "可以到系统设置 → 应用 → 私人健身教练 → 通知中手动允许，"
                                 + "或者继续使用应用内的训练页。");
             }
             render();

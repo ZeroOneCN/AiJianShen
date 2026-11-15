@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
 
     private void bindHeader() {
         TextView title = findViewById(R.id.tv_title);
-        title.setText("圆练教练");
+        title.setText("私人健身教练");
         Ui.font(title, 800);
 
         flameIcon = IconView.FLAME;

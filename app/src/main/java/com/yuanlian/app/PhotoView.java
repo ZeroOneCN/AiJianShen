@@ -19,7 +19,13 @@ import android.util.AttributeSet;
 import android.util.LruCache;
 import android.view.View;
 
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -28,7 +34,10 @@ import java.util.concurrent.Executors;
  *
  * 静态图为 960x960，列表按采样率解码；详情页和训练页播放 640x640 动态 WebP
  * （AnimatedImageDrawable，Android 9+；8.x 自动退回静态图）。
- * 媒体 © Gym visual（https://gymvisual.com/）。
+ *
+ * 每张图在画面里的人物大小并不一致（原片留白差别很大），所以离线算了一份
+ * 「主体框」索引 assets/boxes.json，绘制时按框裁切对齐——同一张卡片里，
+ * 不同动作看起来就是同一个人、同一个取景距离。
  */
 public class PhotoView extends View {
 
@@ -38,6 +47,11 @@ public class PhotoView extends View {
             return value.getByteCount();
         }
     };
+
+    /** 归一化的主体框 l,t,r,b；缺失时按整图处理。 */
+    private static final Map<String, float[]> BOX = new HashMap<>();
+    private static final float[] FULL = {0f, 0f, 1f, 1f};
+    private static boolean boxLoaded;
 
     private static final ExecutorService POOL = Executors.newFixedThreadPool(2);
     private static final Handler MAIN = new Handler(Looper.getMainLooper());
@@ -288,14 +302,14 @@ public class PhotoView extends View {
         canvas.drawRect(box, bgPaint);
 
         if (anim != null) {
-            fitCenter(anim.getIntrinsicWidth(), anim.getIntrinsicHeight(), dst);
+            fitContent(boxOf(key), dst);
             anim.setBounds(Math.round(dst.left), Math.round(dst.top),
                     Math.round(dst.right), Math.round(dst.bottom));
             anim.draw(canvas);
             postInvalidateOnAnimation();
         } else if (still != null) {
             bmpPaint.setAlpha(255);
-            fitCenter(still.getWidth(), still.getHeight(), dst);
+            fitContent(boxOf(key), dst);
             canvas.drawBitmap(still, null, dst, bmpPaint);
         }
         canvas.restore();
@@ -312,28 +326,58 @@ public class PhotoView extends View {
         }
     }
 
-    /** 等比完整显示，居中，不裁肢体。 */
-    private void fitCenter(int bw, int bh, RectF out) {
+    /** 按主体框等比居中：整图按「框」去凑视图，多出来的部分被圆角裁掉。 */
+    private void fitContent(float[] b, RectF out) {
         float vw = getWidth();
         float vh = getHeight();
-        if (bw <= 0 || bh <= 0) {
-            out.set(0, 0, vw, vh);
+        float bw = Math.max(0.05f, b[2] - b[0]);
+        float bh = Math.max(0.05f, b[3] - b[1]);
+        float s = Math.min(vw / bw, vh / bh) * zoom;
+        float cx = (b[0] + b[2]) / 2f * s;
+        float cy = (b[1] + b[3]) / 2f * s;
+        float l = vw / 2f - cx;
+        float t = vh / 2f - cy;
+        out.set(l, t, l + s, t + s);
+    }
+
+    /** 主体框一次性读进内存（38 KB，1324 条）。 */
+    private static synchronized void loadBoxes(Context c) {
+        if (boxLoaded) {
             return;
         }
-        float scale = Math.min(vw / bw, vh / bh);
-        float dw = bw * scale;
-        float dh = bh * scale;
-        if (zoom > 1f) {
-            float cw = dw / zoom;
-            float chh = dh / zoom;
-            float cx = (vw - cw) / 2f;
-            float cy = (vh - chh) / 2f;
-            out.set(cx, cy, cx + cw, cy + chh);
-        } else {
-            float l = (vw - dw) / 2f;
-            float t = (vh - dh) / 2f;
-            out.set(l, t, l + dw, t + dh);
+        boxLoaded = true;
+        try (InputStream is = c.getAssets().open("boxes.json")) {
+            ByteArrayOutputStream bo = new ByteArrayOutputStream(64 * 1024);
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = is.read(buf)) > 0) {
+                bo.write(buf, 0, n);
+            }
+            JSONObject root = new JSONObject(bo.toString("UTF-8"));
+            Iterator<String> it = root.keys();
+            while (it.hasNext()) {
+                String k = it.next();
+                org.json.JSONArray a = root.optJSONArray(k);
+                if (a == null || a.length() < 4) {
+                    continue;
+                }
+                BOX.put(k, new float[]{
+                        (float) a.optDouble(0, 0),
+                        (float) a.optDouble(1, 0),
+                        (float) a.optDouble(2, 1),
+                        (float) a.optDouble(3, 1)});
+            }
+        } catch (Throwable ignored) {
+            // 索引缺失就退回整图等比，不影响显示
         }
+    }
+
+    private float[] boxOf(String img) {
+        if (!boxLoaded) {
+            loadBoxes(getContext());
+        }
+        float[] b = BOX.get(img);
+        return b == null ? FULL : b;
     }
 
     private void drawBorder(Canvas canvas, float r) {

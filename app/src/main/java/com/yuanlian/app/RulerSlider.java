@@ -19,7 +19,11 @@ public class RulerSlider extends View {
     private final Paint dot = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint knob = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint knobInner = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint active = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint dotOn = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF box = new RectF();
+    /** 左右留白：绘制与触摸必须用同一个值，否则点到第 2 格会跳到第 3 格。 */
+    private static final float SIDE_DP = 14f;
     private int count = 5;
     private int index = 0;
     private OnIndexChanged listener;
@@ -38,6 +42,10 @@ public class RulerSlider extends View {
         knob.setColor(Ui.ACCENT);
         knobInner.setStyle(Paint.Style.FILL);
         knobInner.setColor(Ui.SURFACE);
+        active.setStyle(Paint.Style.FILL);
+        active.setColor(Ui.ACCENT);
+        dotOn.setStyle(Paint.Style.FILL);
+        dotOn.setColor(0xB3FFFFFF);
     }
 
     public void setCount(int count) {
@@ -65,13 +73,19 @@ public class RulerSlider extends View {
         if (w <= 0 || h <= 0) {
             return;
         }
-        float side = Ui.dp(getContext(), 14);
+        float side = Ui.dp(getContext(), SIDE_DP);
         float trackH = Ui.dp(getContext(), 20);
         float top = (h - trackH) / 2f;
         box.set(side, top, w - side, top + trackH);
         canvas.drawRoundRect(box, trackH / 2f, trackH / 2f, track);
 
         float step = count <= 1 ? 0 : (w - side * 2) / (count - 1);
+        float knobX = side + step * index;
+        // 已选段填充，明确「选到了哪儿」，而不是只看一个小圆环
+        if (index > 0) {
+            RectF fill = new RectF(box.left, box.top, knobX, box.bottom);
+            canvas.drawRoundRect(fill, trackH / 2f, trackH / 2f, active);
+        }
         for (int i = 0; i < count; i++) {
             float x = side + step * i;
             float cy = h / 2f;
@@ -79,7 +93,7 @@ public class RulerSlider extends View {
                 canvas.drawCircle(x, cy, Ui.dp(getContext(), 7.6f), knob);
                 canvas.drawCircle(x, cy, Ui.dp(getContext(), 4.4f), knobInner);
             } else {
-                canvas.drawCircle(x, cy, Ui.dp(getContext(), 2.8f), dot);
+                canvas.drawCircle(x, cy, Ui.dp(getContext(), 2.8f), i < index ? dotOn : dot);
             }
         }
     }
@@ -89,7 +103,7 @@ public class RulerSlider extends View {
         if (e.getAction() == MotionEvent.ACTION_DOWN
                 || e.getAction() == MotionEvent.ACTION_MOVE) {
             getParent().requestDisallowInterceptTouchEvent(true);
-            float side = Ui.dp(getContext(), 18);
+            float side = Ui.dp(getContext(), SIDE_DP);
             float usable = Math.max(1f, getWidth() - side * 2);
             int i = Math.round((e.getX() - side) / usable * (count - 1));
             i = Math.max(0, Math.min(count - 1, i));

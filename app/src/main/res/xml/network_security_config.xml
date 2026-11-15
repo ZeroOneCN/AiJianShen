@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  手机间同步用：两台手机在同一 Wi-Fi 下用明文 HTTP 交换数据（服务端口 8766）。
+  这里只放开明文传输；应用不访问任何公网地址，也没有云端服务器。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

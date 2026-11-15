@@ -6,13 +6,86 @@
     android:background="@color/surface"
     android:orientation="vertical">
 
+    <!-- 顶栏独立成一行：演示图是白底，压在上面会糊成一团 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="22dp"
+        android:paddingRight="16dp">
+
+        <FrameLayout
+            android:id="@+id/btn_back"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="-6dp">
+
+            <com.yuanlian.app.IconView
+                android:id="@+id/icon_back"
+                android:layout_width="21dp"
+                android:layout_height="21dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tv_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:textColor="@color/ink"
+            android:textSize="15sp" />
+
+        <FrameLayout
+            android:id="@+id/btn_help"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginLeft="8dp">
+
+            <com.yuanlian.app.IconView
+                android:id="@+id/icon_help"
+                android:layout_width="19dp"
+                android:layout_height="19dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/btn_music"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginLeft="8dp">
+
+            <com.yuanlian.app.IconView
+                android:id="@+id/icon_music"
+                android:layout_width="19dp"
+                android:layout_height="19dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/btn_settings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginLeft="8dp">
+
+            <com.yuanlian.app.IconView
+                android:id="@+id/icon_settings"
+                android:layout_width="19dp"
+                android:layout_height="19dp"
+                android:layout_gravity="center" />
+        </FrameLayout>
+    </LinearLayout>
+
     <FrameLayout
         android:id="@+id/media_area"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
         android:paddingLeft="16dp"
-        android:paddingTop="6dp"
         android:paddingRight="16dp">
 
         <com.yuanlian.app.PhotoView
@@ -21,89 +94,17 @@
             android:layout_height="match_parent" />
 
         <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="44dp"
-            android:layout_gravity="top"
-            android:layout_marginLeft="6dp"
-            android:layout_marginTop="6dp"
-            android:layout_marginRight="6dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <FrameLayout
-                android:id="@+id/btn_back"
-                android:layout_width="40dp"
-                android:layout_height="40dp">
-
-                <com.yuanlian.app.IconView
-                    android:id="@+id/icon_back"
-                    android:layout_width="21dp"
-                    android:layout_height="21dp"
-                    android:layout_gravity="center" />
-            </FrameLayout>
-
-            <TextView
-                android:id="@+id/tv_title"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:gravity="center"
-                android:maxLines="1"
-                android:textColor="@color/ink"
-                android:textSize="15sp" />
-
-            <FrameLayout
-                android:id="@+id/btn_help"
-                android:layout_width="40dp"
-                android:layout_height="40dp">
-
-                <com.yuanlian.app.IconView
-                    android:id="@+id/icon_help"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/btn_music"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginLeft="2dp">
-
-                <com.yuanlian.app.IconView
-                    android:id="@+id/icon_music"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center" />
-            </FrameLayout>
-
-            <FrameLayout
-                android:id="@+id/btn_settings"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginLeft="2dp">
-
-                <com.yuanlian.app.IconView
-                    android:id="@+id/icon_settings"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center" />
-            </FrameLayout>
-        </LinearLayout>
-
-        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|right"
             android:layout_marginRight="4dp"
-            android:layout_marginBottom="32dp"
+            android:layout_marginBottom="18dp"
             android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/btn_like"
-                android:layout_width="40dp"
-                android:layout_height="40dp">
+                android:layout_width="44dp"
+                android:layout_height="44dp">
 
                 <com.yuanlian.app.IconView
                     android:id="@+id/icon_like"
@@ -114,8 +115,8 @@
 
             <FrameLayout
                 android:id="@+id/btn_dislike"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_marginLeft="6dp">
 
                 <com.yuanlian.app.IconView
@@ -131,10 +132,9 @@
         android:id="@+id/sheet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="-24dp"
         android:orientation="vertical"
         android:paddingLeft="24dp"
-        android:paddingTop="20dp"
+        android:paddingTop="4dp"
         android:paddingRight="24dp"
         android:paddingBottom="16dp">
 
@@ -171,8 +171,8 @@
                     android:id="@+id/tv_set"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:maxLines="1"
                     android:ellipsize="end"
+                    android:maxLines="1"
                     android:textColor="@color/accent"
                     android:textSize="12sp" />
 

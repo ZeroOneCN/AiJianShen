@@ -81,6 +81,25 @@ public final class Nav {
         root.requestApplyInsets();
     }
 
+    /**
+     * 弹层类窗口不在 Activity 的 insets 链里，取不到回调，只能等布局完成后
+     * 从 WindowInsets 里读一次导航栏高度。
+     */
+    public static int navInset(View v) {
+        WindowInsets wi = v.getRootWindowInsets();
+        if (wi != null) {
+            int bottom = Build.VERSION.SDK_INT >= 30
+                    ? wi.getInsets(WindowInsets.Type.navigationBars()).bottom
+                    : wi.getSystemWindowInsetBottom();
+            if (bottom > 0) {
+                return bottom;
+            }
+        }
+        // 有些弹层窗口拿不到 insets，退回系统资源里的导航栏高度
+        int id = v.getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+        return id > 0 ? v.getResources().getDimensionPixelSize(id) : 0;
+    }
+
     public static LinearLayout bar(final Activity a, int selected) {
         LinearLayout wrap = new LinearLayout(a);
         wrap.setOrientation(LinearLayout.VERTICAL);

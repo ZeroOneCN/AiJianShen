@@ -318,7 +318,7 @@ public class WorkoutActivity extends Activity {
                     && (nextAction - 1) % perRound() == 0
                     && totalRounds() > 1;
             tvTip.setText(nextRound ? "下一轮马上开始，保持节奏。" : "调整呼吸，下一个动作马上开始。");
-            tvSet.setText(setLabel(i));
+            tvSet.setText(restLabel(i));
             photo.bind(s.exercise);
             photo.setAlpha(0.35f);
         } else {
@@ -369,6 +369,20 @@ public class WorkoutActivity extends Activity {
         int pos = (action - 1) % per + 1;
         String prefix = rounds > 1 ? "第 " + round + "/" + rounds + " 轮 · " : "";
         return prefix + "第 " + pos + "/" + per + " 个动作";
+    }
+
+    /** 休息步骤不能沿用上一个动作的序号，否则一直停在「第 5/5 个动作」。 */
+    private String restLabel(int i) {
+        int per = perRound();
+        int rounds = totalRounds();
+        int done = actionOrdinal(i);
+        if (per <= 0) {
+            return "组间休息";
+        }
+        int round = Math.min(rounds, Math.max(1, (done - 1) / per + 1));
+        return rounds > 1
+                ? "第 " + round + "/" + rounds + " 轮 · 组间休息"
+                : "组间休息";
     }
 
     private void paintTime() {
@@ -861,6 +875,17 @@ public class WorkoutActivity extends Activity {
         if (w != null) {
             w.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         }
+        // 弹层贴着屏幕底，得把导航栏那一条让出来，否则最后一个按钮会被切掉
+        final int pl = root.getPaddingLeft();
+        final int pt = root.getPaddingTop();
+        final int pr = root.getPaddingRight();
+        final int pb = root.getPaddingBottom();
+        root.post(() -> {
+            int nav = Nav.navInset(root);
+            if (nav > 0) {
+                root.setPadding(pl, pt, pr, pb + nav);
+            }
+        });
     }
 
     private TextView sheetAction(String text, int color, boolean primary) {

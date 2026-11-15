@@ -35,6 +35,9 @@ public final class Store {
     private static final String K_SESSIONS = "sessions";
     private static final String K_REMINDER = "reminder";
     private static final String K_OVERRIDES = "overrides";
+    private static final String K_BODY = "body_records";
+    private static final String K_AGE = "age";
+    private static final String K_SEX = "sex";
 
     private Store() {
     }
@@ -417,6 +420,318 @@ public final class Store {
 
     public static void setHeightCm(Context c, float cm) {
         sp(c).edit().putFloat(K_HEIGHT, cm).apply();
+    }
+
+    // ---- 身体成分：年龄、性别与按时间戳的体重记录 ----
+
+    public static int age(Context c) {
+        return sp(c).getInt(K_AGE, 0);
+    }
+
+    public static void setAge(Context c, int age) {
+        sp(c).edit().putInt(K_AGE, Math.max(0, Math.min(120, age))).apply();
+    }
+
+    /** 性别：true = 男。未设置时按男性处理（体成分公式需要）。 */
+    public static boolean isMale(Context c) {
+        return !"female".equals(sp(c).getString(K_SEX, "male"));
+    }
+
+    public static void setMale(Context c, boolean male) {
+        sp(c).edit().putString(K_SEX, male ? "male" : "female").apply();
+    }
+
+    /** 一条体重记录：可由本机录入、蓝牙体脂秤测量，或从另一台手机同步而来。 */
+    public static class BodyRecord {
+        public final long ts;
+        public final String date;
+        public final float kg;
+        /** 阻抗（欧姆），0 表示没有阻抗数据。 */
+        public final float impedance;
+        /** 按 BIA 公式算好的 18 项体成分（JSON），没有时为 null。 */
+        public final String body;
+        public final String userName;
+        /** 是否由局域网同步而来。 */
+        public final boolean synced;
+
+        BodyRecord(long ts, String date, float kg, float impedance, String body,
+                   String userName, boolean synced) {
+            this.ts = ts;
+            this.date = date;
+            this.kg = kg;
+            this.impedance = impedance;
+            this.body = body;
+            this.userName = userName;
+            this.synced = synced;
+        }
+
+        public JSONObject bodyJson() {
+            if (body == null || body.isEmpty()) {
+                return null;
+            }
+            try {
+                return new JSONObject(body);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
+    /** 按时间升序；最多保留 {@link #MAX_BODY_RECORDS} 条。 */
+    public static List<BodyRecord> bodyRecords(Context c) {
+        List<BodyRecord> out = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONArray(sp(c).getString(K_BODY, "[]"));
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                long ts = o.optLong("ts", 0);
+                float kg = (float) o.optDouble("kg", 0);
+                if (ts <= 0 || kg <= 0) {
+                    continue;
+                }
+                out.add(new BodyRecord(ts, o.optString("d", ""), kg,
+                        (float) o.optDouble("imp", 0), o.optString("body", null),
+                        o.optString("user", ""), o.optBoolean("sync", false)));
+            }
+        } catch (Exception ignored) {
+        }
+        Collections.sort(out, (a, b) -> Long.compare(a.ts, b.ts));
+        return out;
+    }
+
+    private static final int MAX_BODY_RECORDS = 240;
+
+    /** 写入一条记录；同时间戳覆盖（同步重复拉取不会重复入库）。 */
+    public static void addBodyRecord(Context c, long ts, float kg, float impedance,
+                                     String bodyJson, String userName, boolean synced) {
+        if (ts <= 0 || kg <= 0) {
+            return;
+        }
+        List<BodyRecord> list = bodyRecords(c);
+        List<BodyRecord> next = new ArrayList<>();
+        boolean replaced = false;
+        for (BodyRecord r : list) {
+            if (r.ts == ts) {
+                next.add(new BodyRecord(ts, dateOf(ts), kg, impedance, bodyJson,
+                        userName, synced));
+                replaced = true;
+            } else {
+                next.add(r);
+            }
+        }
+        if (!replaced) {
+            next.add(new BodyRecord(ts, dateOf(ts), kg, impedance, bodyJson,
+                    userName, synced));
+        }
+        Collections.sort(next, (a, b) -> Long.compare(a.ts, b.ts));
+        while (next.size() > MAX_BODY_RECORDS) {
+            next.remove(0);
+        }
+        JSONArray arr = new JSONArray();
+        for (BodyRecord r : next) {
+            JSONObject o = new JSONObject();
+            try {
+                o.put("ts", r.ts);
+                o.put("d", r.date);
+                o.put("kg", Math.round(r.kg * 100) / 100.0);
+                o.put("imp", Math.round(r.impedance * 10) / 10.0);
+                if (r.body != null && !r.body.isEmpty()) {
+                    o.put("body", r.body);
+                }
+                if (r.userName != null && !r.userName.isEmpty()) {
+                    o.put("user", r.userName);
+                }
+                o.put("sync", r.synced);
+            } catch (Exception ignored) {
+            }
+            arr.put(o);
+        }
+        sp(c).edit().putString(K_BODY, arr.toString()).apply();
+    }
+
+    public static String dateOf(long ts) {
+        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date(ts));
+    }
+
+    /** 供同步模块组装记录用（构造器是包内可见）。 */
+    static WeightEntry weightOf(String date, float kg) {
+        return new WeightEntry(date, kg);
+    }
+
+    static BodyRecord bodyRecordOf(long ts, float kg, float impedance, String body,
+                                   String userName, boolean synced) {
+        return new BodyRecord(ts, dateOf(ts), kg, impedance, body, userName, synced);
+    }
+
+    public static BodyRecord latestBodyRecord(Context c) {
+        List<BodyRecord> list = bodyRecords(c);
+        return list.isEmpty() ? null : list.get(list.size() - 1);
+    }
+
+    // ---- 手机间同步：快照合并 ----
+
+    /** 每天的分钟数（日期 → 分钟）。 */
+    public static Map<String, Integer> dayMinutes(Context c) {
+        Map<String, Integer> out = new LinkedHashMap<>();
+        JSONObject map = dayMap(c);
+        java.util.Iterator<String> keys = map.keys();
+        while (keys.hasNext()) {
+            String k = keys.next();
+            int v = map.optInt(k, 0);
+            if (v > 0) {
+                out.put(k, v);
+            }
+        }
+        return out;
+    }
+
+    /**
+     * 把另一台手机的快照合并进本机。规则：日期取并集、同一天分钟取较大值、
+     * 训练明细按时间戳去重、体重与体成分按日期 / 时间戳去重；本机缺的档案才补。
+     *
+     * @return 新导入的体成分记录条数
+     */
+    /** 一次合并实际新增的内容，用来给用户一句能看懂的反馈。 */
+    public static class MergeStats {
+        public int days;
+        public int sessions;
+        public int weights;
+        public int body;
+        public boolean profile;
+
+        public boolean nothing() {
+            return days == 0 && sessions == 0 && weights == 0 && body == 0 && !profile;
+        }
+
+        /** 只有体成分条数，兼容同步响应里的 added 字段。 */
+        public int total() {
+            return body;
+        }
+
+        public String summary() {
+            if (nothing()) {
+                return "没有新数据，两台手机已经一致";
+            }
+            StringBuilder sb = new StringBuilder("新增");
+            boolean first = true;
+            if (days > 0) {
+                sb.append(' ').append(days).append(" 个训练日");
+                first = false;
+            }
+            if (weights > 0) {
+                sb.append(first ? " " : "、").append(weights).append(" 条体重");
+                first = false;
+            }
+            if (body > 0) {
+                sb.append(first ? " " : "、").append(body).append(" 条体成分");
+                first = false;
+            }
+            if (sessions > 0) {
+                sb.append(first ? " " : "、").append(sessions).append(" 次训练明细");
+            }
+            if (profile && sb.toString().endsWith("新增")) {
+                sb.append(" 身高年龄档案");
+            }
+            return sb.toString();
+        }
+    }
+
+    public static MergeStats mergeSnapshot(Context c, Set<String> inDates,
+                                           Map<String, Integer> inDayMinutes,
+                                           List<Session> inSessions,
+                                           List<WeightEntry> inWeights,
+                                           List<BodyRecord> inBody,
+                                           float inHeightCm, int inAge, Boolean inMale) {
+        MergeStats stats = new MergeStats();
+
+        if (inDates != null && !inDates.isEmpty()) {
+            Set<String> dates = new HashSet<>(sp(c).getStringSet(K_DATES, new HashSet<String>()));
+            int before = dates.size();
+            dates.addAll(inDates);
+            stats.days = Math.max(0, dates.size() - before);
+            sp(c).edit().putStringSet(K_DATES, dates).apply();
+        }
+
+        if (inDayMinutes != null && !inDayMinutes.isEmpty()) {
+            JSONObject map = dayMap(c);
+            try {
+                for (Map.Entry<String, Integer> e : inDayMinutes.entrySet()) {
+                    int local = map.optInt(e.getKey(), 0);
+                    int v = Math.max(local, e.getValue() == null ? 0 : e.getValue());
+                    if (v > 0) {
+                        map.put(e.getKey(), v);
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            int sum = 0;
+            java.util.Iterator<String> keys = map.keys();
+            while (keys.hasNext()) {
+                sum += map.optInt(keys.next(), 0);
+            }
+            int total = Math.max(sum, sp(c).getInt(K_MINUTES, 0));
+            sp(c).edit().putString(K_DAY_MINUTES, map.toString())
+                    .putInt(K_MINUTES, total).apply();
+        }
+
+        if (inSessions != null && !inSessions.isEmpty()) {
+            List<Session> local = sessions(c);
+            Set<Long> have = new HashSet<>();
+            for (Session s : local) {
+                have.add(s.ts);
+            }
+            for (Session s : inSessions) {
+                if (s.ts > 0 && !have.contains(s.ts)) {
+                    local.add(s);
+                    have.add(s.ts);
+                    stats.sessions++;
+                }
+            }
+            Collections.sort(local, (a, b) -> Long.compare(b.ts, a.ts));
+            sp(c).edit().putString(K_SESSIONS, sessionsJson(local)).apply();
+        }
+
+        if (inWeights != null && !inWeights.isEmpty()) {
+            Set<String> localDates = new HashSet<>();
+            for (WeightEntry e : weights(c)) {
+                localDates.add(e.date);
+            }
+            for (WeightEntry e : inWeights) {
+                if (!localDates.contains(e.date)) {
+                    addWeight(c, e.date, e.kg);
+                    localDates.add(e.date);
+                    stats.weights++;
+                }
+            }
+        }
+
+        if (inBody != null && !inBody.isEmpty()) {
+            Set<Long> localTs = new HashSet<>();
+            for (BodyRecord r : bodyRecords(c)) {
+                localTs.add(r.ts);
+            }
+            for (BodyRecord r : inBody) {
+                if (!localTs.contains(r.ts)) {
+                    addBodyRecord(c, r.ts, r.kg, r.impedance, r.body, r.userName, r.synced);
+                    localTs.add(r.ts);
+                    stats.body++;
+                }
+            }
+        }
+
+        if (heightCm(c) <= 0 && inHeightCm > 0) {
+            setHeightCm(c, inHeightCm);
+            stats.profile = true;
+        }
+        if (age(c) <= 0 && inAge > 0) {
+            setAge(c, inAge);
+            stats.profile = true;
+        }
+        if (inMale != null && age(c) > 0 && !sp(c).contains(K_SEX)) {
+            setMale(c, inMale);
+            stats.profile = true;
+        }
+        return stats;
     }
 
     public static String weightUnit(Context c) {

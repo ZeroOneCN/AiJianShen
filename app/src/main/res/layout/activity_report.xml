@@ -165,6 +165,17 @@
                     android:textSize="20sp" />
 
                 <TextView
+                    android:id="@+id/btn_body_comp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:gravity="center"
+                    android:paddingLeft="12dp"
+                    android:paddingRight="14dp"
+                    android:text="身体成分 ›"
+                    android:textColor="@color/accent"
+                    android:textSize="14sp" />
+
+                <TextView
                     android:id="@+id/btn_weight_log"
                     android:layout_width="wrap_content"
                     android:layout_height="36dp"

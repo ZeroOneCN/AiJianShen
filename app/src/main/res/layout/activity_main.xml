@@ -36,7 +36,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:includeFontPadding="false"
-                    android:text="圆练教练"
+                    android:text="私人健身教练"
                     android:textColor="@color/ink"
                     android:textSize="26sp" />
 

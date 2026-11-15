@@ -93,7 +93,7 @@ public class WorkoutSettingsActivity extends Activity {
                         WorkoutCues.vibrate(this, 40);
                     }
                 }).toggle.setChecked(prefs.vibrate);
-        UiList.row(this, media, IconView.MUSIC, Ui.PURPLE, "语音口令",
+        UiList.row(this, media, IconView.SPEAKER, Ui.PURPLE, "语音口令",
                 "用系统 TTS 播报预备、休息和完成", false, null,
                 (b, on) -> {
                     if (initializing) return;

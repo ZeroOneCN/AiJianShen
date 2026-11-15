@@ -112,7 +112,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:gravity="center"
-                android:text="圆练 1.5 · 本地训练版"
+                android:text="私人健身教练 1.6 · 本地训练版"
                 android:textColor="@color/ink_soft"
                 android:textSize="11sp" />
 

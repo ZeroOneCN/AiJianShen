@@ -43,6 +43,16 @@ public class IconView extends View {
     public static final int PLUS = 30;
     public static final int TROPHY = 31;
     public static final int REFRESH = 32;
+    public static final int LEGS = 33;
+    public static final int ARM = 34;
+    public static final int CARDIO = 37;
+    public static final int STRETCH = 38;
+    public static final int SLIDERS = 39;
+    public static final int SPEAKER = 40;
+    public static final int SHIELD = 41;
+    public static final int RACK = 42;
+    public static final int WIFI = 43;
+    public static final int SCALE = 44;
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path path = new Path();
@@ -207,15 +217,21 @@ public class IconView extends View {
                 circle(canvas, 16f, 15.2f, 3f);
                 break;
             case SETTINGS:
-                circle(canvas, 12, 12, 3.4f);
+                // 齿轮：8 个梯形齿的多边形 + 中心挖孔（奇偶填充），比「圆圈加八条短线」更像齿轮
+                path.reset();
+                path.setFillType(Path.FillType.EVEN_ODD);
                 for (int i = 0; i < 8; i++) {
-                    double a = Math.PI * i / 4.0;
-                    line(canvas,
-                            12 + (float) Math.cos(a) * 5.4f,
-                            12 + (float) Math.sin(a) * 5.4f,
-                            12 + (float) Math.cos(a) * 7.4f,
-                            12 + (float) Math.sin(a) * 7.4f);
+                    float a0 = i * 45f;
+                    point(a0 + 6f, 6.9f, i == 0);
+                    point(a0 + 13f, 9.5f, false);
+                    point(a0 + 32f, 9.5f, false);
+                    point(a0 + 39f, 6.9f, false);
                 }
+                path.close();
+                path.addCircle(12f, 12f, 3.3f, Path.Direction.CCW);
+                paint.setStyle(Paint.Style.FILL);
+                canvas.drawPath(path, paint);
+                paint.setStyle(Paint.Style.STROKE);
                 break;
             case BACK:
                 line(canvas, 20f, 12f, 5f, 12f);
@@ -344,6 +360,105 @@ public class IconView extends View {
                 canvas.drawArc(oval, -55f, 260f, false, paint);
                 polyline(canvas, 17.2f, 3.2f, 19.8f, 7.8f, 14.2f, 8.4f);
                 break;
+            case WIFI:
+                // 三段同心弧 + 底部圆点，语义是「同一网络下的设备」
+                oval.set(9f, 15f, 15f, 21f);
+                canvas.drawArc(oval, -145f, 110f, false, paint);
+                oval.set(6f, 12f, 18f, 24f);
+                canvas.drawArc(oval, -145f, 110f, false, paint);
+                oval.set(3f, 9f, 21f, 27f);
+                canvas.drawArc(oval, -145f, 110f, false, paint);
+                circleFilled(canvas, 12f, 18.6f, 1.25f);
+                break;
+            case SCALE:
+                // 体重秤：圆角方框 + 中间读数点
+                oval.set(3.2f, 4.6f, 20.8f, 19.4f);
+                canvas.drawRoundRect(oval, 4.2f, 4.2f, paint);
+                circleFilled(canvas, 12f, 10.4f, 2.6f);
+                line(canvas, 7.4f, 16.2f, 16.6f, 16.2f);
+                break;
+            case LEGS:
+                // 髋 + 两条带膝的腿，比弧线更容易读成「腿」
+                line(canvas, 9.4f, 4.6f, 14.6f, 4.6f);
+                path.moveTo(9.6f, 4.6f);
+                path.lineTo(9.1f, 12.4f);
+                path.lineTo(8.3f, 20.4f);
+                canvas.drawPath(path, paint);
+                path.moveTo(14.4f, 4.6f);
+                path.lineTo(14.9f, 12.4f);
+                path.lineTo(15.7f, 20.4f);
+                canvas.drawPath(path, paint);
+                break;
+            case ARM:
+                // 双手上举的「Y」：最简洁的肩臂符号，比画一条胳膊清楚
+                line(canvas, 12f, 20.4f, 12f, 11.4f);
+                line(canvas, 12f, 11.4f, 5.2f, 4.8f);
+                line(canvas, 12f, 11.4f, 18.8f, 4.8f);
+                line(canvas, 8.2f, 5.6f, 5.2f, 4.8f);
+                line(canvas, 15.8f, 5.6f, 18.8f, 4.8f);
+                break;
+            case CARDIO:
+                path.moveTo(12f, 20.4f);
+                path.cubicTo(12f, 20.4f, 3.6f, 15.2f, 3.6f, 9.4f);
+                path.cubicTo(3.6f, 6.6f, 5.6f, 4.7f, 8f, 4.7f);
+                path.cubicTo(9.9f, 4.7f, 11.3f, 5.9f, 12f, 7.2f);
+                path.cubicTo(12.7f, 5.9f, 14.1f, 4.7f, 16f, 4.7f);
+                path.cubicTo(18.4f, 4.7f, 20.4f, 6.6f, 20.4f, 9.4f);
+                path.cubicTo(20.4f, 15.2f, 12f, 20.4f, 12f, 20.4f);
+                path.close();
+                canvas.drawPath(path, paint);
+                break;
+            case STRETCH:
+                // 前屈拉伸的小人
+                circle(canvas, 14.4f, 4.4f, 2f);
+                path.moveTo(13.2f, 6.2f);
+                path.cubicTo(11.6f, 9.2f, 9.4f, 11.6f, 6.6f, 13.4f);
+                canvas.drawPath(path, paint);
+                line(canvas, 6.6f, 13.4f, 4.4f, 20.2f);
+                line(canvas, 6.6f, 13.4f, 10.4f, 19.8f);
+                path.moveTo(12.6f, 7.4f);
+                path.cubicTo(14.8f, 8.4f, 16.2f, 10.4f, 16.8f, 13.4f);
+                canvas.drawPath(path, paint);
+                break;
+            case SLIDERS:
+                slider(canvas, 7f, 9f);
+                slider(canvas, 12f, 15.2f);
+                slider(canvas, 17f, 7.6f);
+                break;
+            case SPEAKER:
+                path.moveTo(4f, 9.4f);
+                path.lineTo(7.4f, 9.4f);
+                path.lineTo(12f, 5.2f);
+                path.lineTo(12f, 18.8f);
+                path.lineTo(7.4f, 14.6f);
+                path.lineTo(4f, 14.6f);
+                path.close();
+                canvas.drawPath(path, paint);
+                path.moveTo(14.8f, 9.4f);
+                path.cubicTo(16.2f, 10.6f, 16.2f, 13.4f, 14.8f, 14.6f);
+                canvas.drawPath(path, paint);
+                path.moveTo(17.4f, 7f);
+                path.cubicTo(19.8f, 9.2f, 19.8f, 14.8f, 17.4f, 17f);
+                canvas.drawPath(path, paint);
+                break;
+            case SHIELD:
+                path.moveTo(12f, 3.2f);
+                path.lineTo(19.6f, 6.1f);
+                path.lineTo(19.6f, 11.4f);
+                path.cubicTo(19.6f, 16.2f, 16.4f, 19.6f, 12f, 21f);
+                path.cubicTo(7.6f, 19.6f, 4.4f, 16.2f, 4.4f, 11.4f);
+                path.lineTo(4.4f, 6.1f);
+                path.close();
+                canvas.drawPath(path, paint);
+                polyline(canvas, 8.8f, 11.8f, 11.1f, 14.2f, 15.4f, 9.6f);
+                break;
+            case RACK:
+                line(canvas, 3.4f, 5.2f, 20.6f, 5.2f);
+                line(canvas, 5.2f, 5.2f, 5.2f, 20.4f);
+                line(canvas, 18.8f, 5.2f, 18.8f, 20.4f);
+                line(canvas, 5.2f, 8.8f, 8.4f, 8.8f);
+                line(canvas, 15.6f, 8.8f, 18.8f, 8.8f);
+                break;
             case SEARCH:
             default:
                 circle(canvas, 10.6f, 10.6f, 6.5f);
@@ -351,6 +466,25 @@ public class IconView extends View {
                 break;
         }
         canvas.restore();
+    }
+
+    /** 一条带圆钮的滑轨，左右两侧留出圆钮的位置。 */
+    private void slider(Canvas canvas, float y, float knobX) {
+        line(canvas, 3.4f, y, knobX - 2.6f, y);
+        line(canvas, knobX + 2.6f, y, 20.6f, y);
+        circle(canvas, knobX, y, 2.5f);
+    }
+
+    /** 按角度和半径往 path 里追加顶点，用于齿轮一类的多边形。 */
+    private void point(float deg, float r, boolean move) {
+        double a = Math.toRadians(deg - 90);
+        float x = 12f + (float) Math.cos(a) * r;
+        float y = 12f + (float) Math.sin(a) * r;
+        if (move) {
+            path.moveTo(x, y);
+        } else {
+            path.lineTo(x, y);
+        }
     }
 
     private void drawThumb(Canvas canvas, boolean down) {

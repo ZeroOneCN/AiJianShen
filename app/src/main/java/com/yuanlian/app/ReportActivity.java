@@ -71,6 +71,11 @@ public class ReportActivity extends Activity {
         Ui.font(weightLog, 600);
         weightLog.setOnClickListener(v -> HealthDialogs.recordWeight(this, this::renderWeight));
 
+        TextView bodyComp = findViewById(R.id.btn_body_comp);
+        Ui.font(bodyComp, 600);
+        bodyComp.setOnClickListener(v ->
+                startActivity(new android.content.Intent(this, BodyActivity.class)));
+
         tvWeight = findViewById(R.id.tv_weight);
         tvWeightMax = findViewById(R.id.tv_weight_max);
         tvWeightMin = findViewById(R.id.tv_weight_min);

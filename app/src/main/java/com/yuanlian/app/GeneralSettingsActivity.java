@@ -73,7 +73,7 @@ public class GeneralSettingsActivity extends Activity {
         UiList.row(this, other, IconView.COMPASS, Ui.SLATE, "语言",
                 "简体中文 · 跟随系统", false,
                 v -> InfoDialog.show(this, "语言",
-                        "圆练当前内置简体中文界面，会跟随系统的深色模式和字号设置。\n\n"
+                        "私人健身教练当前内置简体中文界面，会跟随系统的深色模式和字号设置。\n\n"
                                 + "训练动作名称保留了英文原名，方便对照国外教程。"));
         UiList.row(this, other, IconView.INFO, Ui.SLATE, "本机数据",
                 "不联网、无账号、无云端同步", true,

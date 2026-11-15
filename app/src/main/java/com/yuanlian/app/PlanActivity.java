@@ -93,7 +93,7 @@ public class PlanActivity extends Activity {
 
         btnNext.setText(step == STEPS - 1 ? "生成我的计划" : "下一步");
         btnNext.setBackground(Ui.ripple(this,
-                step == STEPS - 1 ? Ui.gradientBluePill(this) : Ui.gradientDarkPill(this),
+                Ui.gradientBluePill(this),
                 0x33FFFFFF));
 
         body.removeAllViews();
@@ -273,7 +273,7 @@ public class PlanActivity extends Activity {
                 PlanProfile.GEAR_BAR, PlanProfile.GEAR_GYM};
         String[] subs = {"始终保留，不需要任何器械",
                 "家里常见的小器械", "单杠、双杠或长凳", "完整器械动作池"};
-        int[] icons = {IconView.USER, IconView.DUMBBELL, IconView.TARGET, IconView.TROPHY};
+        int[] icons = {IconView.USER, IconView.DUMBBELL, IconView.RACK, IconView.TROPHY};
         int[] colors = {Ui.GREEN, Ui.BLUE_TILE, Ui.ORANGE, Ui.PURPLE};
         for (int i = 0; i < PlanProfile.GEAR_OPTIONS.length; i++) {
             final int idx = i;
@@ -692,7 +692,7 @@ public class PlanActivity extends Activity {
             case 2:
                 return IconView.TARGET;
             default:
-                return IconView.MUSIC;
+                return IconView.STRETCH;
         }
     }
 
@@ -712,17 +712,17 @@ public class PlanActivity extends Activity {
     private int focusIcon(int focus) {
         switch (focus) {
             case 0:
-                return IconView.TARGET;
+                return IconView.USER;
             case 1:
                 return IconView.BOLT;
             case 2:
-                return IconView.CHART;
+                return IconView.LEGS;
             case 3:
                 return IconView.DUMBBELL;
             case 4:
-                return IconView.USER;
+                return IconView.ARM;
             default:
-                return IconView.FLAME;
+                return IconView.CARDIO;
         }
     }
 

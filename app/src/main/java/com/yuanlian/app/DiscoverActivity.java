@@ -106,6 +106,10 @@ public class DiscoverActivity extends Activity {
 
     private void renderFeatured() {
         LinearLayout box = findViewById(R.id.featured);
+        // 整块做成一张圆角白卡：三行共用一张卡，行与行之间用缩进分隔线，
+        // clipToOutline 才能把首尾两行被切掉的直角裁干净。
+        box.setBackground(Ui.round(this, Ui.SURFACE, Ui.R_CARD));
+        box.setClipToOutline(true);
         int added = 0;
         for (int k = 0; k < 7 && added < 3; k++) {
             int idx = (todayIndex + k) % 7;
@@ -133,7 +137,8 @@ public class DiscoverActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setBackground(Ui.ripple(this, Ui.round(this, Ui.SURFACE, 0f), 0x14000000));
+        // 卡片底色由外层统一给，这里只留水波纹，否则行自带的白色直角会盖住圆角
+        row.setBackground(Ui.ripple(this, Ui.round(this, 0x00000000, 0f), 0x14000000));
         row.setPadding(0, Ui.dpi(this, 12), 0, Ui.dpi(this, 12));
         row.setClickable(true);
         wrap.addView(row, new LinearLayout.LayoutParams(

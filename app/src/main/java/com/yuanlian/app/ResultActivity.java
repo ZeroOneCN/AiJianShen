@@ -6,6 +6,7 @@ import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -73,9 +74,19 @@ public class ResultActivity extends Activity {
         LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         int p = Ui.dpi(this, 20);
-        body.setPadding(p, Ui.dpi(this, 12), p, Ui.dpi(this, 12));
+        body.setPadding(p, Ui.dpi(this, 12), p, Ui.dpi(this, 26));
         sc.addView(body);
-        root.addView(sc, new LinearLayout.LayoutParams(
+
+        // 内容比一屏长，底部压一层由底色渐隐的遮罩，让人知道还能往下滑
+        FrameLayout holder = new FrameLayout(this);
+        holder.addView(sc, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        View fade = new View(this);
+        fade.setBackground(Ui.gradientVertical(this, 0x00F8F8F8, Ui.BG, 0f));
+        fade.setClickable(false);
+        holder.addView(fade, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 26), Gravity.BOTTOM));
+        root.addView(holder, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         body.addView(hero());
@@ -90,7 +101,7 @@ public class ResultActivity extends Activity {
 
         LinearLayout actions = new LinearLayout(this);
         actions.setOrientation(LinearLayout.VERTICAL);
-        actions.setPadding(p, Ui.dpi(this, 8), p, Ui.dpi(this, 14));
+        actions.setPadding(p, Ui.dpi(this, 14), p, Ui.dpi(this, 14));
         root.addView(actions);
 
         TextView done = UiList.primary(this, "完成");
@@ -141,7 +152,11 @@ public class ResultActivity extends Activity {
                 Ui.dpi(this, 10), Ui.dpi(this, 4));
         badge.setBackground(Ui.round(this, Ui.CREAM, 11f));
         Ui.font(badge, 600);
-        content.addView(badge);
+        // 胶囊按文字收窄，右侧给角标圆留出位置，避免被压在下面
+        LinearLayout.LayoutParams blp2 = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        blp2.rightMargin = Ui.dpi(this, 66);
+        content.addView(badge, blp2);
 
         TextView big = new TextView(this);
         boolean goal = weekReached();
@@ -340,9 +355,13 @@ public class ResultActivity extends Activity {
             t.setText(FEEL_LABELS[i]);
             t.setTextColor(Ui.INK_SOFT);
             t.setTextSize(12);
+            t.setGravity(Gravity.CENTER);
             t.setPadding(0, Ui.dpi(this, 6), 0, 0);
             Ui.font(t, 500);
-            cell.addView(t);
+            // 纵向 LinearLayout 的默认参数是 MATCH_PARENT 宽，文字会在整格里左对齐，
+            // 父容器的 gravity=CENTER 就失效了。这里显式给宽度 + 居中。
+            cell.addView(t, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             cell.setOnClickListener(v -> selectFeel(idx));
             feelCells[i] = cell;
             feelIcons[i] = ic;

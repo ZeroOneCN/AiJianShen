@@ -154,10 +154,13 @@ public final class UiList {
             sw = new Switch(a);
             sw.setShowText(false);
             sw.setChecked(false);
+            // 系统的开关轨迹自带半透明（实测只剩 26% 不透明度，开着也像半开）。
+            // 轨道用 SRC 染色直接得到给的实色；滑块保持默认染色模式，白色圆点的投影才在。
             sw.setThumbTintList(ColorStateList.valueOf(Color.WHITE));
             sw.setTrackTintList(new ColorStateList(
                     new int[][]{{android.R.attr.state_checked}, {}},
                     new int[]{Ui.ACCENT, 0xFFD7DBE2}));
+            sw.setTrackTintMode(android.graphics.PorterDuff.Mode.SRC);
             sw.setOnCheckedChangeListener(listener);
             row.addView(sw, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(a, 40)));
