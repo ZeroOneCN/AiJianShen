@@ -19,6 +19,12 @@ app/src/main/assets/anim/
 __pycache__/
 *.pyc
 
+# 工作区数据（会话记录、临时截图、备份）
+.workbuddy/
+build/dist/
+build/backup/
+build/shots/
+
 # OS
 .DS_Store
 Thumbs.db

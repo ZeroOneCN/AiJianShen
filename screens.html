@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>圆练 · 真机截图</title>
+<title>私人健身教练 · 真机截图</title>
 <style>
   :root{
     --ink:#1C212C; --ink-soft:#888888; --bg:#F8F8F8; --surface:#fff;
@@ -35,64 +35,103 @@
 </head>
 <body>
 <header>
-  <div class="eyebrow">YuanLian · v1.5</div>
-  <h1>圆练 · 实测截图</h1>
+  <div class="eyebrow">私人健身教练 · v1.6</div>
+  <h1>私人健身教练 · 实测截图</h1>
   <p class="sub">
-    以下均为 APK 安装后模拟器运行截屏，非设计稿。设备 1080×1920 / 480dpi。<br>
-    这一版把动作素材矢量化重制：静态图 960px、动图 640px，纯白底与白色卡片无缝相接；同时加入「定制计划」：
-    按目标、水平、频率、时长、器械和重点部位生成一周安排。动作条目、肌群与中文要领来自
-    exercises-dataset（MIT），演示图与动图来自 Gym visual（已购授权）。
+    以下均为 APK 安装后的实际运行截屏，非设计稿。02 / 07 / 09 / 11–14 取自真机
+    （vivo V2359A / Android 16 / 1080×2400），05 / 06 / 08 / 10 为模拟器 540×960，
+    其余为模拟器 1080×1920。<br>
+    这一版继续按样本 APK 的规格收口：底栏、图标语义、圆角与间距逐项对齐；动作插图先用
+    <code>boxes.json</code> 做主体框归一化，同一套缩放规则把「人物大小不一」拉平；
+    训练页顶栏独立成条，休息态改写为「第 r/R 轮 · 组间休息」。动作条目、肌群与中文要领来自
+    exercises-dataset（MIT），演示图与动图来自 Gym visual（已购授权）。<br>
+    本版新增体重与身体成分：蓝牙直连体脂秤读体重与阻抗，18 项指标按 BIA 公式在本机算；
+    换手机时用同一 Wi-Fi 走「手机间同步」把训练记录与体重搬过去，全程没有云端。
   </p>
   <div class="meta">
     <div class="pill">定制一周计划</div>
     <div class="pill">1324 个动作</div>
     <div class="pill">10 个部位</div>
+    <div class="pill">主体框归一化</div>
     <div class="pill">1324 段 640px 循环动图</div>
-    <div class="pill">零网络权限</div>
+    <div class="pill">蓝牙体脂秤</div>
+    <div class="pill">18 项体成分</div>
+    <div class="pill">手机间点对点同步</div>
+    <div class="pill">资源随包安装</div>
     <div class="pill">约 168 MB</div>
   </div>
 </header>
 
 <div class="grid">
   <figure>
-    <img src="screens/v15-home.png" alt="首页">
-    <figcaption><b>首页</b><span>定制计划卡、恢复日大卡、连续天数 / 本周完成 / 累计分钟；
-      素材在白卡里没有边框，倒计时以外的区域全是白的</span></figcaption>
+    <img src="screens/01-home.png" alt="首页">
+    <figcaption><b>首页</b><span>本周目标、连续天数、今日安排与挑战卡；今天已练完时，
+      提示条会换成「做几组拉伸收尾」</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-plan-goal.png" alt="定制计划 · 目标">
-    <figcaption><b>定制计划 · 目标</b><span>目标、水平、频率三组条件；底部实时预览这次会排成
-      多少动作 × 多少轮、大约几分钟</span></figcaption>
+    <img src="screens/02-discover.png" alt="发现">
+    <figcaption><b>发现</b><span>每日十分钟的入口，下面是按天排好的精选；
+      右侧「全部动作」直达动作库</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-plan-gear.png" alt="定制计划 · 器械与重点">
-    <figcaption><b>定制计划 · 条件</b><span>时长决定轮数，器械决定动作池（徒手始终保留），
-      重点部位可多选，全身则不限部位</span></figcaption>
+    <img src="screens/03-report.png" alt="报告">
+    <figcaption><b>报告</b><span>七日完成格与连续天数、体重曲线与「身体成分」入口；
+      曲线刻度落在整值上，不会出现 75.3 / 75.1 这种跳数</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-week.png" alt="一周安排">
-    <figcaption><b>一周安排</b><span>训练日按目标换主题（全身燃脂、间歇有氧…），
-      非训练日自动排 5 个徒手拉伸；行内直接显示轮次与预计时长</span></figcaption>
+    <img src="screens/04-settings.png" alt="设置">
+    <figcaption><b>设置</b><span>定制计划、动作库、训练设置、通用设置、语音播报、提醒与隐私；
+      往下还有「手机间同步」和「连接体脂秤」两个入口</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-library.png" alt="动作库">
-    <figcaption><b>动作库</b><span>1324 条全量动作，10 个部位筛选；列表用 64dp 静态缩略图，
-      器械与目标肌群直接标在副标题里</span></figcaption>
+    <img src="screens/05-day.png" alt="日程详情">
+    <figcaption><b>日程详情</b><span>第 N 天 · 主题与重点部位、总时长、动作数与轮次，
+      下面是逐个动作的缩略图与秒数</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-detail.png" alt="动作详情">
-    <figcaption><b>动作详情</b><span>白底循环演示铺满弹窗上半部，下面是中英文名、标签与分步要领；
-      底部固定「关闭 / 练这个动作」</span></figcaption>
+    <img src="screens/06-plan.png" alt="定制计划">
+    <figcaption><b>定制计划</b><span>目标 / 水平 / 频率 / 时长 / 器械 / 重点六组条件，
+      分步选择，底部实时给出这次会排成多少动作、多少轮</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-workout.png" alt="训练中">
-    <figcaption><b>训练播放器</b><span>按计划的轮次和秒数走：「第 1/4 轮 · 第 1/6 个动作」，
-      倒计时画成卡片描边</span></figcaption>
+    <img src="screens/07-library.png" alt="动作库">
+    <figcaption><b>动作库</b><span>1324 条全量动作，部位筛选横向滑动；卡片之间留 12dp 间隔、
+      各自独立圆角，滚动时不会糊成一整块；缩略图按主体框 fitCenter，人物比例一致</span></figcaption>
   </figure>
   <figure>
-    <img src="screens/v15-rest.png" alt="组间休息">
-    <figcaption><b>组间休息</b><span>动作之间按目标插入 15–30 秒休息；一轮结束时提示
-      「下一轮马上开始」，可暂停或跳过</span></figcaption>
+    <img src="screens/08-detail.png" alt="动作详情">
+    <figcaption><b>动作详情</b><span>白底循环演示与卡片无缝相接，下面是中英文名、部位 /
+      肌群 / 类型 / 器械标签、分步中文要领；底部固定「关闭 / 练这个动作」</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/09-workout.png" alt="训练中">
+    <figcaption><b>训练播放器</b><span>顶栏独立成条（返回 / 要领 / 音乐 / 设置，三个按钮之间留 8dp），
+      不再压在白底演示图上；进度写「第 1/4 轮 · 第 1/5 个动作」，倒计时画成卡片描边</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/10-rest.png" alt="组间休息">
+    <figcaption><b>组间休息</b><span>休息态用绿色描边圈并改写标签为「组间休息」，
+      不会把自己算成一个动作；可暂停或跳过</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/11-result.png" alt="完成页">
+    <figcaption><b>完成后</b><span>时长 / 动作数 / 千卡、本周目标进度、今天的强度反馈、
+      体重与 BMI，顺手设提醒；底部可「完成」或再来一次</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/12-body.png" alt="体重与身体成分">
+    <figcaption><b>体重与身体成分</b><span>当前体重、身高年龄性别，以及 BMI / 体脂率 /
+      肌肉量 / 水分率四宫格；下面还有 14 项细分指标与测量记录</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/13-scale.png" alt="连接体脂秤">
+    <figcaption><b>连接体脂秤</b><span>真机连的是 AFU-WL-TZ-A1（AntAF 私有 GATT 协议）。
+      踩上秤后读数实时跟到 74.1 kg，稳定后自动落一条记录，带阻抗时顺带算出 18 项体成分</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/14-sync.png" alt="手机间同步">
+    <figcaption><b>手机间同步</b><span>一台开服务、另一台填地址，点对点把训练日、分钟数、
+      训练明细、体重与体成分合并过来；同一份数据同步多次不会重复</span></figcaption>
   </figure>
 </div>
 
