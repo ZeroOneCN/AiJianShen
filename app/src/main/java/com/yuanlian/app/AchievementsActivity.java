@@ -45,7 +45,7 @@ public class AchievementsActivity extends Activity {
                 earned++;
             }
         }
-        body.addView(hero(earned, all.size()));
+        body.addView(hero(earned, all));
 
         String group = null;
         LinearLayout card = null;
@@ -66,7 +66,7 @@ public class AchievementsActivity extends Activity {
                 + "「练过多少个动作」按个人纪录表统计，所以升级前练的动作不计入。");
     }
 
-    private FrameLayout hero(int earned, int total) {
+    private FrameLayout hero(int earned, List<Achievements.Badge> all) {
         FrameLayout card = new FrameLayout(this);
         card.setBackground(Ui.gradientStreak(this));
         card.setClipToOutline(true);
@@ -102,14 +102,14 @@ public class AchievementsActivity extends Activity {
         Ui.font(n, 800);
         num.addView(n);
         TextView of = new TextView(this);
-        of.setText(" / " + total);
+        of.setText(" / " + all.size());
         of.setTextColor(Ui.WHITE_60);
         of.setTextSize(18);
         of.setPadding(0, 0, 0, Ui.dpi(this, 9));
         Ui.font(of, 600);
         num.addView(of);
 
-        String hint = Achievements.nextHint(this);
+        String hint = Achievements.nextHint(all);
         TextView tip = new TextView(this);
         tip.setText(hint.isEmpty() ? "全部达成了，厉害。" : hint);
         tip.setTextColor(Ui.WHITE_80);

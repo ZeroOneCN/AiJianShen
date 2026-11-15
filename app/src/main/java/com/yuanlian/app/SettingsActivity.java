@@ -123,9 +123,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.8" : v;
+            return v == null || v.isEmpty() ? "1.8.1" : v;
         } catch (Exception e) {
-            return "1.8";
+            return "1.8.1";
         }
     }
 
@@ -261,6 +261,9 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_EXPORT && requestCode != REQ_IMPORT) {
+            return;
+        }
         if (resultCode != RESULT_OK || data == null || data.getData() == null) {
             return;
         }
@@ -278,6 +281,9 @@ public class SettingsActivity extends Activity {
                 Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
             }
         } else if (requestCode == REQ_IMPORT) {
+            // 只读前 8 MB：备份就是一份几百字节的 JSON，超过这个量说明选错了文件，
+            // 不设上限的话选个视频就会把整个文件读进内存崩掉。
+            final int limit = 8 * 1024 * 1024;
             try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
                 if (in == null) {
                     throw new java.io.IOException("无法读取");
@@ -285,7 +291,14 @@ public class SettingsActivity extends Activity {
                 java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
                 byte[] buf = new byte[8192];
                 int n;
+                int total = 0;
                 while ((n = in.read(buf)) > 0) {
+                    total += n;
+                    if (total > limit) {
+                        Toast.makeText(this, "这个文件太大，不是本应用的备份",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     bos.write(buf, 0, n);
                 }
                 String text = new String(bos.toByteArray(),

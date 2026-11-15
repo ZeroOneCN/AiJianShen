@@ -244,12 +244,14 @@ public class ReportActivity extends Activity {
         HeatmapView map = new HeatmapView(this);
         String[] keys = new String[84];
         int[] mins = new int[84];
+        java.util.Map<String, Integer> byDay = Store.dayMinutes(this);
         Calendar walk = Calendar.getInstance();
         int dow = (walk.get(Calendar.DAY_OF_WEEK) + 5) % 7;
         walk.add(Calendar.DAY_OF_MONTH, -dow - 11 * 7);
         for (int i = 0; i < 84; i++) {
             keys[i] = Store.key(walk);
-            mins[i] = Store.minutesOn(this, walk);
+            Integer m = byDay.get(keys[i]);
+            mins[i] = m == null ? 0 : m;
             walk.add(Calendar.DAY_OF_MONTH, 1);
         }
         map.setData(keys, mins);
@@ -383,13 +385,6 @@ public class ReportActivity extends Activity {
         head.addView(title, new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        TextView moves = new TextView(this);
-        moves.setText("练过 " + Store.prCount(this) + " 个动作");
-        moves.setTextColor(Ui.INK_SOFT);
-        moves.setTextSize(12);
-        Ui.font(moves, 400);
-        head.addView(moves);
-
         Calendar mon = Calendar.getInstance();
         int dow = (mon.get(Calendar.DAY_OF_WEEK) + 5) % 7;
         mon.add(Calendar.DAY_OF_MONTH, -dow);
@@ -399,7 +394,10 @@ public class ReportActivity extends Activity {
             mon.add(Calendar.DAY_OF_MONTH, 1);
         }
 
+        // 先统计再画标题：这里要的是「本周」练过几个动作，
+        // 不能再用个人纪录表的累计数，否则卡片标题和右侧数字对不上。
         java.util.Map<String, Integer> byPart = new java.util.LinkedHashMap<>();
+        Set<String> weekIds = new java.util.HashSet<>();
         for (Store.Session s : Store.sessions(this)) {
             if (!keys.contains(s.date) || s.ids == null || s.ids.isEmpty()) {
                 continue;
@@ -409,10 +407,18 @@ public class ReportActivity extends Activity {
                 if (e == null || e.part == null) {
                     continue;
                 }
+                weekIds.add(e.id);
                 Integer old = byPart.get(e.part);
                 byPart.put(e.part, old == null ? 1 : old + 1);
             }
         }
+
+        TextView moves = new TextView(this);
+        moves.setText(weekIds.isEmpty() ? "本周还没练" : "本周 " + weekIds.size() + " 个动作");
+        moves.setTextColor(Ui.INK_SOFT);
+        moves.setTextSize(12);
+        Ui.font(moves, 400);
+        head.addView(moves);
 
         if (byPart.isEmpty()) {
             TextView empty = new TextView(this);
