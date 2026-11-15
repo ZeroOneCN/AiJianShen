@@ -61,18 +61,23 @@ public final class Achievements {
     public static List<Badge> all(Context c) {
         List<Badge> out = new ArrayList<>();
 
+        // 这里只读一次记录和个人纪录表：之前 goal/合计/早晚各查一遍，
+        // 首页每次 onResume 都要把同一份 JSON 解析六七次。
+        List<Store.Session> log = Store.sessions(c);
+        Map<String, Store.Pr> prs = Store.prs(c);
+
         int days = Store.daysTrained(c);
         int best = Store.bestStreak(c);
         int minutes = Store.totalMinutes(c);
-        int kcal = Store.totalKcal(c);
+        int kcal = Store.totalKcal(log);
         int favs = Store.favoriteIds(c).size();
-        int moves = Store.prCount(c);
+        int moves = prs.size();
         int weights = Store.weights(c).size();
-        int parts = trainedParts(c);
+        int parts = trainedParts(prs);
         int week = Store.weekDone(c, Data.todayIndex(Calendar.getInstance()));
         int plan = Math.max(2, Store.profile(c).days);
-        boolean dawn = trainedAtHour(c, 5, 9);
-        boolean night = trainedAtHour(c, 21, 24);
+        boolean dawn = trainedAtHour(log, 5, 9);
+        boolean night = trainedAtHour(log, 21, 24);
 
         // 起步：第一次走到终点
         out.add(new Badge("起步", "动起来", "完成第一次训练", IconView.PLAY,
@@ -130,8 +135,13 @@ public final class Achievements {
 
     /** 最近一次达成的徽章标题，没有则空串（首页用来做一句话提示）。 */
     public static String nextHint(Context c) {
+        return nextHint(all(c));
+    }
+
+    /** 已经算好徽章列表时用这个重载，省一次全量统计。 */
+    public static String nextHint(List<Badge> list) {
         Badge nearest = null;
-        for (Badge b : all(c)) {
+        for (Badge b : list) {
             if (b.earned()) {
                 continue;
             }
@@ -144,9 +154,9 @@ public final class Achievements {
     }
 
     /** 个人纪录表里有记录的动作，覆盖了几个部位。 */
-    private static int trainedParts(Context c) {
+    private static int trainedParts(Map<String, Store.Pr> prs) {
         Set<String> parts = new HashSet<>();
-        for (Map.Entry<String, Store.Pr> e : Store.prs(c).entrySet()) {
+        for (Map.Entry<String, Store.Pr> e : prs.entrySet()) {
             Exercise ex = Data.byId(e.getKey());
             if (ex != null && ex.part != null && !ex.part.isEmpty()) {
                 parts.add(ex.part);
@@ -156,9 +166,9 @@ public final class Achievements {
     }
 
     /** [from, to) 点之间有没有完成过训练。 */
-    private static boolean trainedAtHour(Context c, int from, int to) {
+    private static boolean trainedAtHour(List<Store.Session> log, int from, int to) {
         Calendar cal = Calendar.getInstance();
-        for (Store.Session s : Store.sessions(c)) {
+        for (Store.Session s : log) {
             if (s.ts <= 0) {
                 continue;
             }

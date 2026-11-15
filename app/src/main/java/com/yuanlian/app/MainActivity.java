@@ -249,7 +249,9 @@ public class MainActivity extends Activity {
         boolean doneToday = Store.dates(this).contains(Store.key(Calendar.getInstance()));
         Data.Day today = plan.get(todayIndex);
         Store.Pending pending = Store.pending(this);
-        boolean resume = pending != null && !doneToday;
+        // 只要有没做完的存档就给入口。之前还要求「今天没练完」，
+        // 结果是今天练过一次、又开了一次没做完的情况下，存档再也回不去了。
+        boolean resume = pending != null;
 
         LinearLayout coach = findViewById(R.id.coach_row);
         IconView coachIcon = findViewById(R.id.icon_coach);

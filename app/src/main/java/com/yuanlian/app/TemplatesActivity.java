@@ -65,6 +65,20 @@ public class TemplatesActivity extends Activity {
         render();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        // 去选动作时本页可能被系统回收，回来时还要知道这次是在改哪个模板，
+        // 否则会退化成「新建」，凭空多出一个训练。
+        out.putString("editing_id", editingId);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle in) {
+        super.onRestoreInstanceState(in);
+        editingId = in.getString("editing_id");
+    }
+
     private void render() {
         body.removeAllViews();
         List<Store.Template> list = Store.templates(this);
@@ -80,7 +94,7 @@ public class TemplatesActivity extends Activity {
             Ui.font(t, 700);
             card.addView(t);
             TextView d = new TextView(this);
-            d.setText("从 1324 个动作里挑几个存下来，定好轮次和动作时长，"
+            d.setText("从 " + Data.all().size() + " 个动作里挑几个存下来，定好轮次和动作时长，"
                     + "以后在首页点一下就能开练，不用每次重新想练什么。");
             d.setTextColor(Ui.INK_SOFT);
             d.setTextSize(13);
@@ -362,9 +376,12 @@ public class TemplatesActivity extends Activity {
         Window w = dialog.getWindow();
         if (w != null) {
             w.setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
-            w.setLayout(Ui.dpi(this, 300), ViewGroup.LayoutParams.WRAP_CONTENT);
         }
         dialog.show();
+        // setLayout 必须在 show 之后：窗口还没 attach 时设的尺寸会被 content 的测量覆盖
+        if (w != null) {
+            w.setLayout(Ui.dpi(this, 300), ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void start(Store.Template t) {

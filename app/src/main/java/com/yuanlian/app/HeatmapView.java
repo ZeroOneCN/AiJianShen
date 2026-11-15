@@ -94,20 +94,33 @@ public class HeatmapView extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent e) {
-        if (listener == null || e.getAction() != MotionEvent.ACTION_UP) {
+        if (listener == null || side <= 0) {
             return super.onTouchEvent(e);
+        }
+        // View 默认不消费 DOWN，父容器就不会再把 UP 派发过来，点击等于完全没反应。
+        // 这里主动吃掉 DOWN，UP 时再判断落在哪一格；滑动仍由外层 ScrollView 拦截。
+        if (e.getAction() == MotionEvent.ACTION_DOWN) {
+            return true;
+        }
+        if (e.getAction() != MotionEvent.ACTION_UP) {
+            return true;
         }
         float x = e.getX() - getPaddingLeft();
         float y = e.getY() - getPaddingTop();
         if (x < 0 || y < 0) {
             return false;
         }
+        // 落在格子之间的缝里也算旁边那一格：格子只有 70 来像素宽，
+        // 缝占了近三成面积，精确到像素才响应会让人觉得「点不动」。
         int col = (int) (x / (side + gap));
         int row = (int) (y / (side + gap));
         if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {
             return false;
         }
         int index = col * ROWS + row;
+        if (keys[index] == null) {
+            return false;
+        }
         performClick();
         listener.onDay(keys[index], minutes[index]);
         return true;

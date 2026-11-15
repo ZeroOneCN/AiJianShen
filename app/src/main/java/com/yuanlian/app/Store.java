@@ -348,8 +348,13 @@ public final class Store {
      * 按每分钟 6 千卡的旧口径回退，保证升级后总数不会突然变小。
      */
     public static int totalKcal(Context c) {
+        return totalKcal(sessions(c));
+    }
+
+    /** 已经读过记录时用这个重载，省一次 JSON 解析。 */
+    public static int totalKcal(List<Session> log) {
         int sum = 0;
-        for (Session s : sessions(c)) {
+        for (Session s : log) {
             sum += s.kcal > 0 ? s.kcal : s.minutes * 6;
         }
         return sum;
@@ -478,7 +483,6 @@ public final class Store {
     public static int prCount(Context c) {
         return prs(c).size();
     }
-
     /**
      * 记一组完成。
      *
@@ -597,29 +601,7 @@ public final class Store {
         if (!replaced) {
             all.add(t);
         }
-        JSONArray arr = new JSONArray();
-        for (Template v : all) {
-            JSONObject o = new JSONObject();
-            try {
-                o.put("id", v.id);
-                o.put("n", v.name);
-                o.put("r", v.rounds);
-                o.put("s", v.seconds);
-                o.put("t", v.rest);
-                o.put("at", v.created);
-                StringBuilder sb = new StringBuilder();
-                for (String one : v.ids) {
-                    if (sb.length() > 0) {
-                        sb.append(',');
-                    }
-                    sb.append(one);
-                }
-                o.put("x", sb.toString());
-            } catch (Exception ignored) {
-            }
-            arr.put(o);
-        }
-        sp(c).edit().putString(K_TMPL, arr.toString()).apply();
+        sp(c).edit().putString(K_TMPL, templatesJson(all).toString()).apply();
     }
 
     public static void deleteTemplate(Context c, String id) {
@@ -630,8 +612,13 @@ public final class Store {
                 break;
             }
         }
+        sp(c).edit().putString(K_TMPL, templatesJson(all).toString()).apply();
+    }
+
+    /** 模板列表 → JSON。save 与 delete 共用，避免两处序列化字段不同步。 */
+    private static JSONArray templatesJson(List<Template> list) {
         JSONArray arr = new JSONArray();
-        for (Template v : all) {
+        for (Template v : list) {
             JSONObject o = new JSONObject();
             try {
                 o.put("id", v.id);
@@ -652,7 +639,7 @@ public final class Store {
             }
             arr.put(o);
         }
-        sp(c).edit().putString(K_TMPL, arr.toString()).apply();
+        return arr;
     }
 
     // ---- 中断的训练：把进度留在本机，下次接着练 ----
@@ -666,6 +653,8 @@ public final class Store {
         public List<String> ids = new ArrayList<>();
         public List<Integer> totals = new ArrayList<>();
         public List<Integer> remains = new ArrayList<>();
+        /** 每一步已经练过的秒数。恢复后结算消耗要用，否则前段训练白练。 */
+        public List<Integer> spents = new ArrayList<>();
         public int index;
         public int elapsedSeconds;
         public int rounds = 1;
@@ -674,19 +663,10 @@ public final class Store {
         public boolean valid() {
             return !ids.isEmpty() && index >= 0 && index < ids.size();
         }
-
-        /** 「核心燃脂 · 第 2/8 个动作」这类能直接放在首页的一句话。 */
-        public String progressText() {
-            int perRound = 0;
-            for (String id : ids) {
-                if (id != null && !id.isEmpty()) {
-                    perRound++;
-                }
-            }
-            String step = ids.get(index).isEmpty() ? "组间休息" : "动作";
-            return title + " · 停在第 " + (index + 1) + "/" + ids.size() + " 步（" + step + "）";
-        }
     }
+
+    /** 存档超过这个时间就当放弃了：放着一个多月前的半截训练，只会一直占着首页入口。 */
+    private static final long MAX_PENDING_AGE = 7L * 24 * 3600 * 1000;
 
     public static Pending pending(Context c) {
         String text = sp(c).getString(K_PENDING, "");
@@ -704,6 +684,9 @@ public final class Store {
             p.elapsedSeconds = o.optInt("el", 0);
             p.rounds = Math.max(1, o.optInt("r", 1));
             p.savedAt = o.optLong("ts", 0);
+            if (p.savedAt > 0 && System.currentTimeMillis() - p.savedAt > MAX_PENDING_AGE) {
+                return null;
+            }
             JSONArray steps = o.optJSONArray("steps");
             for (int i = 0; steps != null && i < steps.length(); i++) {
                 JSONArray one = steps.optJSONArray(i);
@@ -713,15 +696,13 @@ public final class Store {
                 p.ids.add(one.optString(0, ""));
                 p.totals.add(one.optInt(1, 0));
                 p.remains.add(one.optInt(2, 0));
+                // 第 4 项是 1.8.1 才加的；更早的存档没有，按 0 处理
+                p.spents.add(one.optInt(3, 0));
             }
             return p.valid() ? p : null;
         } catch (Exception e) {
             return null;
         }
-    }
-
-    public static boolean hasPending(Context c) {
-        return pending(c) != null;
     }
 
     public static void savePending(Context c, Pending p) {
@@ -735,8 +716,9 @@ public final class Store {
             for (int i = 0; i < p.ids.size(); i++) {
                 JSONArray one = new JSONArray();
                 one.put(p.ids.get(i));
-                one.put(p.totals.get(i));
-                one.put(p.remains.get(i));
+                one.put(i < p.totals.size() ? p.totals.get(i) : 0);
+                one.put(i < p.remains.size() ? p.remains.get(i) : 0);
+                one.put(i < p.spents.size() ? p.spents.get(i) : 0);
                 steps.put(one);
             }
             o.put("day", p.dayIndex);

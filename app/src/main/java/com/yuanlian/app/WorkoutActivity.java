@@ -254,7 +254,8 @@ public class WorkoutActivity extends Activity {
         Store.Pending pending = resume ? Store.pending(this) : null;
 
         if (pending != null && restorePending(pending)) {
-            Store.clearPending(this);
+            // 存档先留着：恢复后如果进程被杀，下次还能从原处继续。
+            // 练完由 complete() 清，中途退出由 savePendingIfNeeded() 覆盖。
             single = pending.single;
             sessionTitle = pending.title;
             dayIndex = pending.dayIndex;
@@ -402,7 +403,10 @@ public class WorkoutActivity extends Activity {
                 restored.add(new Step(false, e, total));
             }
             int remain = Math.max(0, Math.min(total, p.remains.get(i)));
-            restored.get(restored.size() - 1).remaining = remain;
+            Step step = restored.get(restored.size() - 1);
+            step.remaining = remain;
+            // 已经练过的秒数也要还原，否则结算时前段训练的消耗会被当成 0
+            step.spent = Math.max(0, Math.min(total, p.spents.get(i)));
         }
         steps.clear();
         steps.addAll(restored);
@@ -642,6 +646,11 @@ public class WorkoutActivity extends Activity {
             return;
         }
         Step s = steps.get(index);
+        if (!paused && !leadIn) {
+            // 按截止时刻现算一次，别等 tick 的 200ms 粒度，否则会少算 0–1 秒
+            s.remaining = (int) Math.max(0,
+                    (deadline - SystemClock.elapsedRealtime() + 999) / 1000);
+        }
         s.spent = Math.max(0, Math.min(s.total, s.total - s.remaining));
     }
 
@@ -769,17 +778,16 @@ public class WorkoutActivity extends Activity {
         resultKcal = 0;
         float kg = Store.latestWeightKg(this);
         for (Step s : steps) {
-            // 只算真正练过的秒数：跳过的步骤不该计入消耗
+            // 只算真正练过的秒数：跳过的步骤不该计入消耗，也不该算进「完成几个动作」
             if (s.rest) {
                 resultKcal += Math.round(Kcal.burn(kg, s.spent, Kcal.MET_REST));
-            } else {
+            } else if (s.spent > 0) {
                 resultCount++;
                 resultKcal += Math.round(Kcal.burn(kg, s.spent, Kcal.metFor(s.exercise)));
             }
         }
-        if (resultKcal <= 0) {
-            resultKcal = Kcal.rough(resultMinutes);
-        }
+        // 不设下限：全程跳过时 spent 全是 0，消耗就该是 0。
+        // 早先这里用「分钟 × 6」兜底，会把「确实没练」当成「没算」，凭空多出几卡。
         // 本次真正练过的动作：写进训练记录（部位分布要用），同时刷新个人纪录
         Set<String> played = new LinkedHashSet<>();
         Map<String, Integer> bestOf = new LinkedHashMap<>();
@@ -1217,6 +1225,7 @@ public class WorkoutActivity extends Activity {
             // 还没真正开始，不留半截记录
             return;
         }
+        closeCurrentStep();
         Store.Pending p = new Store.Pending();
         p.dayIndex = dayIndex;
         p.title = sessionTitle;
@@ -1228,6 +1237,7 @@ public class WorkoutActivity extends Activity {
             p.ids.add(s.rest ? "" : s.exercise.id);
             p.totals.add(s.total);
             p.remains.add(Math.max(0, s.remaining));
+            p.spents.add(Math.max(0, Math.min(s.total, s.spent)));
         }
         Store.savePending(this, p);
     }
