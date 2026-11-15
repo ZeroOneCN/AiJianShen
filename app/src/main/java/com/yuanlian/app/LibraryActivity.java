@@ -294,6 +294,37 @@ public class LibraryActivity extends Activity {
             box.addView(gear, glp);
         }
 
+        Store.Pr pr = Store.pr(this, e.id);
+        if (pr != null && pr.bestSeconds > 0) {
+            LinearLayout rec = new LinearLayout(this);
+            rec.setOrientation(LinearLayout.HORIZONTAL);
+            rec.setGravity(Gravity.CENTER_VERTICAL);
+            rec.setBackground(Ui.round(this, Ui.GREEN_SOFT, 14f));
+            int rp = Ui.dpi(this, 12);
+            rec.setPadding(rp, rp, rp, rp);
+            LinearLayout.LayoutParams recLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            recLp.topMargin = Ui.dpi(this, 14);
+            box.addView(rec, recLp);
+
+            IconView ic = new IconView(this);
+            ic.setIcon(IconView.TROPHY);
+            ic.setColor(Ui.GREEN);
+            ic.setStrokeDp(2f);
+            LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
+                    Ui.dpi(this, 20), Ui.dpi(this, 20));
+            ilp.rightMargin = Ui.dpi(this, 8);
+            rec.addView(ic, ilp);
+
+            TextView t = new TextView(this);
+            t.setText("个人纪录：单组最长 " + pr.bestSeconds + " 秒 · 累计 " + pr.sets + " 组");
+            t.setTextColor(Ui.GREEN);
+            t.setTextSize(12.5f);
+            Ui.font(t, 600);
+            rec.addView(t, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+
         section(box, "动作要领");
         for (int i = 0; i < e.steps.size(); i++) {
             LinearLayout row = new LinearLayout(this);

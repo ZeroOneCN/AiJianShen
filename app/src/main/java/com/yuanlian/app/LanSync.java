@@ -74,6 +74,12 @@ public final class LanSync {
                 j.put("m", s.minutes);
                 j.put("c", s.count);
                 j.put("f", s.feel);
+                if (s.kcal > 0) {
+                    j.put("k", s.kcal);
+                }
+                if (s.ids != null && !s.ids.isEmpty()) {
+                    j.put("x", s.ids);
+                }
                 sessions.put(j);
             }
             o.put("sessions", sessions);
@@ -156,6 +162,8 @@ public final class LanSync {
                 s.minutes = j.optInt("m", 0);
                 s.count = j.optInt("c", 0);
                 s.feel = j.optInt("f", -1);
+                s.kcal = j.optInt("k", -1);
+                s.ids = j.optString("x", "");
                 if (s.ts > 0) {
                     sessions.add(s);
                 }
