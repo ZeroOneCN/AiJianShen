@@ -6,11 +6,14 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,18 +28,21 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 
 public class WorkoutActivity extends Activity {
 
     public static final String EXTRA_DAY = "day_index";
     public static final String EXTRA_SINGLE = "single_exercise";
+    /** 从首页「继续上次训练」进来：恢复上次没做完的进度。 */
+    public static final String EXTRA_RESUME = "resume_pending";
 
     private static class Step {
         final boolean rest;
         Exercise exercise;
-        final int total;
+        int total;
         int remaining;
+        /** 这一步实际练了多少秒：跳过时只算停留过的部分，消耗不能按计划量算。 */
+        int spent;
 
         Step(boolean rest, Exercise exercise, int total) {
             this.rest = rest;
@@ -46,14 +52,28 @@ public class WorkoutActivity extends Activity {
         }
     }
 
+    /** 倒计时刷新间隔：数值由绝对时间算出，间隔只影响画面刷新，不影响计时精度。 */
+    private static final long TICK_MS = 200;
+    /** 休息时「再来一会儿」加多少秒。 */
+    private static final int REST_EXTRA = 15;
+
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final List<Step> steps = new ArrayList<>();
 
     private int index = 0;
-    private int leadIn = 0;
     private boolean paused = false;
     private boolean finished = false;
-    private int elapsedSeconds = 0;
+
+    /** 当前步骤结束的绝对时刻（elapsedRealtime），所有剩余秒数都从它反推。 */
+    private long deadline = 0;
+    /** 是否仍在预备倒计时。 */
+    private boolean leadIn = false;
+    /** 预备倒计时的总秒数，用于画进度。 */
+    private int leadTotal = 0;
+    /** 已完成的有效训练毫秒数与本段计时起点。 */
+    private long activeMs = 0;
+    private long resumedAt = 0;
+    private int finalSeconds = 0;
 
     private PhotoView photo;
     private TimerRingView ring;
@@ -80,39 +100,55 @@ public class WorkoutActivity extends Activity {
     private int lastCuedStep = -1;
     private int resultMinutes;
     private int resultCount;
+    private int resultKcal;
     private boolean sessionMarked;
     private boolean resultOpened;
+    /** 休息中才显示的两个快捷按钮，避免和「暂停」抢位置。 */
+    private LinearLayout restActions;
 
+    private AudioManager audio;
+    private AudioFocusRequest focusRequest;
+    private boolean resumeMusicOnFocus;
+
+    /**
+     * 每 TICK_MS 用「结束时刻 - 现在」重算一次剩余秒数。
+     * 不用逐次 -1 的做法：Handler 的延迟会被主线程的活拖后，一分半钟就会差好几秒。
+     */
     private final Runnable tick = new Runnable() {
         @Override
         public void run() {
             if (paused || finished) {
                 return;
             }
-            if (leadIn > 0) {
-                leadIn--;
-                if (leadIn <= 0) {
+            long now = SystemClock.elapsedRealtime();
+            int rem = (int) Math.max(0, (deadline - now + 999) / 1000);
+            if (leadIn) {
+                if (rem <= 0) {
+                    leadIn = false;
                     paintLeadDone();
+                    startStep(now);
                     Step first = steps.get(index);
                     tvState.setText(first.rest ? "休息" : "进行中");
                     tvState.setTextColor(first.rest ? Ui.GREEN : Ui.ACCENT);
                     cueStep(index);
-                    handler.postDelayed(this, 700);
+                    show(index);
+                    schedule();
                 } else {
-                    paintLead();
-                    handler.postDelayed(this, 1000);
+                    paintLead(rem);
+                    schedule();
                 }
                 return;
             }
             Step s = steps.get(index);
-            s.remaining--;
-            elapsedSeconds++;
-            paintTime();
-            if (s.remaining <= 0) {
-                advance();
-            } else {
-                handler.postDelayed(this, 1000);
+            if (s.remaining != rem) {
+                s.remaining = rem;
+                paintTime();
             }
+            if (rem <= 0) {
+                advance();
+                return;
+            }
+            schedule();
         }
     };
 
@@ -123,6 +159,9 @@ public class WorkoutActivity extends Activity {
         setContentView(R.layout.activity_workout);
         Nav.chrome(this);
         Nav.insets(findViewById(R.id.root));
+
+        // 训练中途锁屏等于打断训练，屏幕一直亮到结束
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         findViewById(R.id.media_area).setBackgroundColor(Ui.SURFACE);
         getWindow().setStatusBarColor(Ui.SURFACE);
@@ -142,6 +181,7 @@ public class WorkoutActivity extends Activity {
         tvTitle = findViewById(R.id.tv_title);
         ring = findViewById(R.id.ring);
         iconToggle = findViewById(R.id.icon_toggle);
+        restActions = findViewById(R.id.rest_actions);
 
         Ui.font(tvState, 800);
         Ui.font(tvExercise, 700);
@@ -158,8 +198,8 @@ public class WorkoutActivity extends Activity {
         circle(findViewById(R.id.btn_music), glass, Ui.INK, IconView.MUSIC, R.id.icon_music);
         circle(findViewById(R.id.btn_settings), glass, Ui.INK, IconView.SETTINGS,
                 R.id.icon_settings);
-        circle(findViewById(R.id.btn_like), glass, Ui.INK_MUTED, IconView.THUMB_UP, R.id.icon_like);
-        circle(findViewById(R.id.btn_dislike), glass, Ui.INK_MUTED, IconView.THUMB_DOWN,
+        circle(findViewById(R.id.btn_like), glass, Ui.INK_MUTED, IconView.STAR, R.id.icon_like);
+        circle(findViewById(R.id.btn_dislike), glass, Ui.INK_MUTED, IconView.REFRESH,
                 R.id.icon_dislike);
         circle(findViewById(R.id.btn_prev), Ui.CARD_SOFT, Ui.INK, IconView.SKIP_PREV,
                 R.id.icon_prev);
@@ -179,6 +219,24 @@ public class WorkoutActivity extends Activity {
                 Store.overrides(this, dayIndex));
 
         single = getIntent().getStringExtra(EXTRA_SINGLE);
+        boolean resume = getIntent().getBooleanExtra(EXTRA_RESUME, false);
+        Store.Pending pending = resume ? Store.pending(this) : null;
+
+        if (pending != null && restorePending(pending)) {
+            Store.clearPending(this);
+            single = pending.single;
+            sessionTitle = pending.title;
+            dayIndex = pending.dayIndex;
+            tvTitle.setText(sessionTitle);
+            show(index);
+            resumeTimers(pending.elapsedSeconds);
+            cueStep(index);
+            schedule();
+            bindRestActions();
+            bindClicks();
+            return;
+        }
+
         if (single != null) {
             sessionTitle = single;
         } else {
@@ -191,7 +249,11 @@ public class WorkoutActivity extends Activity {
         tvState.setText(prefs.prepSeconds > 0 ? "预备开始" : "开始训练");
         tvTip.setText("站好位置，跟着动作示范，保持呼吸。");
         beginLeadIn();
+        bindRestActions();
+        bindClicks();
+    }
 
+    private void bindClicks() {
         findViewById(R.id.btn_back).setOnClickListener(v -> showExit());
         findViewById(R.id.btn_help).setOnClickListener(v -> showHelp());
         findViewById(R.id.btn_music).setOnClickListener(v -> toggleMusic());
@@ -200,8 +262,35 @@ public class WorkoutActivity extends Activity {
         findViewById(R.id.btn_prev).setOnClickListener(v -> restartStep());
         findViewById(R.id.btn_skip).setOnClickListener(v -> onSkip());
         findViewById(R.id.btn_toggle).setOnClickListener(v -> onToggle());
-        findViewById(R.id.btn_like).setOnClickListener(v -> feedback(true));
-        findViewById(R.id.btn_dislike).setOnClickListener(v -> feedback(false));
+        findViewById(R.id.btn_like).setOnClickListener(v -> toggleFavorite());
+        findViewById(R.id.btn_dislike).setOnClickListener(v -> replaceCurrent());
+    }
+
+    private void bindRestActions() {
+        TextView more = restActions.findViewById(R.id.btn_more_rest);
+        TextView skip = restActions.findViewById(R.id.btn_skip_rest);
+        for (TextView tv : new TextView[]{more, skip}) {
+            tv.setTextSize(12.5f);
+            tv.setGravity(Gravity.CENTER);
+            int lr = Ui.dpi(this, 14);
+            int tb = Ui.dpi(this, 8);
+            tv.setPadding(lr, tb, lr, tb);
+            tv.setTextColor(Ui.GREEN);
+            tv.setBackground(Ui.ripple(this, Ui.round(this, Ui.GREEN_SOFT, Ui.R_PILL),
+                    0x22000000));
+            Ui.font(tv, 600);
+        }
+        more.setText("+" + REST_EXTRA + " 秒");
+        skip.setText("跳过休息");
+        more.setOnClickListener(v -> addRest(REST_EXTRA));
+        skip.setOnClickListener(v -> onSkip());
+    }
+
+    private void paintRestActions(boolean visible) {
+        if (restActions == null) {
+            return;
+        }
+        restActions.setVisibility(visible ? View.VISIBLE : View.GONE);
     }
 
     private void circle(View view, int bg, int color, int icon, int iconId) {
@@ -246,22 +335,105 @@ public class WorkoutActivity extends Activity {
         }
     }
 
+    /** 还原上次没做完的那次训练；动作缺失（换版本、动作库变了）时放弃恢复。 */
+    private boolean restorePending(Store.Pending p) {
+        if (p == null || !p.valid()) {
+            return false;
+        }
+        List<Step> restored = new ArrayList<>();
+        Exercise lastExercise = null;
+        for (int i = 0; i < p.ids.size(); i++) {
+            String id = p.ids.get(i);
+            int total = Math.max(1, p.totals.get(i));
+            if (id == null || id.isEmpty()) {
+                if (lastExercise == null) {
+                    return false;
+                }
+                restored.add(new Step(true, lastExercise, total));
+            } else {
+                Exercise e = Data.byId(id);
+                if (e == null) {
+                    return false;
+                }
+                lastExercise = e;
+                restored.add(new Step(false, e, total));
+            }
+            int remain = Math.max(0, Math.min(total, p.remains.get(i)));
+            restored.get(restored.size() - 1).remaining = remain;
+        }
+        steps.clear();
+        steps.addAll(restored);
+        restoredRounds = p.rounds;
+        index = Math.max(0, Math.min(steps.size() - 1, p.index));
+        if (steps.get(index).remaining <= 0) {
+            steps.get(index).remaining = steps.get(index).total;
+        }
+        return true;
+    }
+
+    private void resumeTimers(int elapsedSeconds) {
+        leadIn = false;
+        paused = false;
+        activeMs = Math.max(0, elapsedSeconds) * 1000L;
+        resumedAt = SystemClock.elapsedRealtime();
+        deadline = resumedAt + steps.get(index).remaining * 1000L;
+        iconToggle.setIcon(IconView.PAUSE);
+        tvToggle.setText("暂停");
+        // 状态文字交给 show() 决定；这里给一句一次性提示，别让「接着上次继续」一直挂在那
+        Toast.makeText(this, "已恢复上次的进度，接着练", Toast.LENGTH_SHORT).show();
+    }
+
     private void beginLeadIn() {
         handler.removeCallbacks(tick);
-        leadIn = Math.max(0, prefs.prepSeconds);
+        leadTotal = Math.max(0, prefs.prepSeconds);
         paused = false;
-        if (leadIn <= 0) {
+        leadIn = leadTotal > 0;
+        long now = SystemClock.elapsedRealtime();
+        if (!leadIn) {
             paintLeadDone();
+            startStep(now);
             Step first = steps.get(index);
             tvState.setText(first.rest ? "休息" : "进行中");
             tvState.setTextColor(first.rest ? Ui.GREEN : Ui.ACCENT);
             cueStep(index);
-            handler.postDelayed(tick, 1000);
+            schedule();
             return;
         }
-        paintLead();
+        deadline = now + leadTotal * 1000L;
+        paintLead(leadTotal);
         cue(WorkoutCues.TICK, 30, "准备");
-        handler.postDelayed(tick, 1000);
+        schedule();
+    }
+
+    /** 把当前这一步的结束时刻定下来，并从现在开始累计有效训练时间。 */
+    private void startStep(long now) {
+        Step s = steps.get(index);
+        if (s.remaining <= 0) {
+            s.remaining = s.total;
+        }
+        deadline = now + s.remaining * 1000L;
+        if (resumedAt == 0) {
+            resumedAt = now;
+        }
+        paintTime();
+    }
+
+    private void schedule() {
+        handler.removeCallbacks(tick);
+        if (paused || finished) {
+            return;
+        }
+        handler.postDelayed(tick, TICK_MS);
+    }
+
+    private int elapsedSeconds() {
+        if (finished) {
+            return finalSeconds;
+        }
+        if (leadIn || paused) {
+            return (int) (activeMs / 1000);
+        }
+        return (int) ((activeMs + SystemClock.elapsedRealtime() - resumedAt) / 1000);
     }
 
     private void cue(int kind, int vibrateMs, String say) {
@@ -289,11 +461,11 @@ public class WorkoutActivity extends Activity {
         }
     }
 
-    private void paintLead() {
+    private void paintLead(int seconds) {
         ring.setRingColor(Ui.ACCENT);
         ring.setDone(false);
-        ring.setSeconds(leadIn);
-        ring.setProgress(leadIn / (float) Math.max(1, prefs.prepSeconds));
+        ring.setSeconds(seconds);
+        ring.setProgress(leadTotal <= 0 ? 0f : seconds / (float) leadTotal);
         tvState.setText("预备开始");
         tvState.setTextColor(Ui.ACCENT);
         iconToggle.setIcon(IconView.PAUSE);
@@ -308,6 +480,7 @@ public class WorkoutActivity extends Activity {
     private void show(int i) {
         Step s = steps.get(i);
         paintTime();
+        paintRestActions(s.rest && !finished);
         if (s.rest) {
             tvState.setText("休息");
             tvState.setTextColor(Ui.GREEN);
@@ -331,6 +504,12 @@ public class WorkoutActivity extends Activity {
             photo.bind(s.exercise);
             photo.setAlpha(1f);
         }
+        if (paused) {
+            // 暂停中跳过或换动作时，状态文案不能又变回「进行中」
+            tvState.setText("已暂停");
+            tvState.setTextColor(Ui.INK_MUTED);
+        }
+        paintFavorite();
     }
 
     private int perRound() {
@@ -344,8 +523,14 @@ public class WorkoutActivity extends Activity {
         return rounds <= 0 ? total : total / rounds;
     }
 
+    /** 从存档恢复时用存档里的轮次数，避免跨周后计划变了导致「第 x/y 轮」错位。 */
+    private int restoredRounds = 0;
+
     private int totalRounds() {
-        return getIntent().getStringExtra(EXTRA_SINGLE) != null ? 1 : Math.max(1, day.rounds);
+        if (restoredRounds > 0) {
+            return restoredRounds;
+        }
+        return single != null ? 1 : Math.max(1, day.rounds);
     }
 
     private int actionOrdinal(int stepIndex) {
@@ -395,16 +580,25 @@ public class WorkoutActivity extends Activity {
 
     private void advance() {
         handler.removeCallbacks(tick);
+        closeCurrentStep();
         if (index >= steps.size() - 1) {
             complete();
             return;
         }
         index++;
+        startStep(SystemClock.elapsedRealtime());
         show(index);
         cueStep(index);
-        if (!paused) {
-            handler.postDelayed(tick, 1000);
+        schedule();
+    }
+
+    /** 离开当前步骤时结算实际停留秒数。 */
+    private void closeCurrentStep() {
+        if (index < 0 || index >= steps.size()) {
+            return;
         }
+        Step s = steps.get(index);
+        s.spent = Math.max(0, Math.min(s.total, s.total - s.remaining));
     }
 
     private void restartStep() {
@@ -418,19 +612,34 @@ public class WorkoutActivity extends Activity {
         handler.removeCallbacks(tick);
         Step s = steps.get(index);
         s.remaining = s.total;
-        leadIn = 0;
+        leadIn = false;
         if (resume) {
             paused = false;
+            resumedAt = SystemClock.elapsedRealtime();
             iconToggle.setIcon(IconView.PAUSE);
             tvToggle.setText("暂停");
         }
+        startStep(SystemClock.elapsedRealtime());
         show(index);
         if (!paused) {
             lastCuedStep = -1;
             cueStep(index);
-            handler.postDelayed(tick, 1000);
+            schedule();
         }
         Toast.makeText(this, "已重新开始当前动作", Toast.LENGTH_SHORT).show();
+    }
+
+    /** 休息时多给一点时间：把结束时刻往后推，剩余秒数由 tick 自动重算。 */
+    private void addRest(int seconds) {
+        if (finished || index >= steps.size() || !steps.get(index).rest) {
+            return;
+        }
+        Step s = steps.get(index);
+        s.total += seconds;
+        s.remaining += seconds;
+        deadline += seconds * 1000L;
+        paintTime();
+        Toast.makeText(this, "休息延长 " + seconds + " 秒", Toast.LENGTH_SHORT).show();
     }
 
     private void onToggle() {
@@ -438,21 +647,43 @@ public class WorkoutActivity extends Activity {
             openResult();
             return;
         }
+        long now = SystemClock.elapsedRealtime();
         paused = !paused;
+        if (paused) {
+            // 暂停时把当前剩余量固化下来，恢复后从这里接着走
+            if (leadIn) {
+                leadTotal = Math.max(1, leadTotal);
+                paintLead((int) Math.max(0, (deadline - now + 999) / 1000));
+            } else {
+                Step s = steps.get(index);
+                s.remaining = (int) Math.max(0, (deadline - now + 999) / 1000);
+                paintTime();
+                if (resumedAt > 0) {
+                    activeMs += Math.max(0, now - resumedAt);
+                }
+            }
+            handler.removeCallbacks(tick);
+        } else {
+            if (leadIn) {
+                // 预备倒计时不算训练时长，恢复后仍旧不计
+                resumedAt = 0;
+                deadline = now + Math.max(1, leadTotal) * 1000L;
+            } else {
+                resumedAt = now;
+                Step s = steps.get(index);
+                deadline = now + Math.max(1, s.remaining) * 1000L;
+            }
+            schedule();
+        }
         iconToggle.setIcon(paused ? IconView.PLAY : IconView.PAUSE);
         tvToggle.setText(paused ? "继续" : "暂停");
-        if (leadIn > 0) {
+        if (leadIn) {
             tvState.setText(paused ? "已暂停" : "预备开始");
             tvState.setTextColor(paused ? Ui.INK_MUTED : Ui.ACCENT);
         } else {
             boolean rest = steps.get(index).rest;
             tvState.setText(paused ? "已暂停" : (rest ? "休息" : "进行中"));
             tvState.setTextColor(paused ? Ui.INK_MUTED : (rest ? Ui.GREEN : Ui.ACCENT));
-        }
-        if (!paused) {
-            handler.postDelayed(tick, 1000);
-        } else {
-            handler.removeCallbacks(tick);
         }
     }
 
@@ -461,25 +692,57 @@ public class WorkoutActivity extends Activity {
             return;
         }
         handler.removeCallbacks(tick);
-        advance();
+        if (leadIn) {
+            // 预备阶段按「跳过」是提前开始，不应该把第一个动作跳过
+            leadIn = false;
+            paintLeadDone();
+            startStep(SystemClock.elapsedRealtime());
+            show(index);
+            cueStep(index);
+            schedule();
+            return;
+        }
+        closeCurrentStep();
+        if (index >= steps.size() - 1) {
+            complete();
+            return;
+        }
+        index++;
+        startStep(SystemClock.elapsedRealtime());
+        show(index);
+        cueStep(index);
+        schedule();
     }
 
     private void complete() {
+        finalSeconds = elapsedSeconds();
         finished = true;
         paused = true;
-        leadIn = 0;
-        resultMinutes = Math.max(1, (elapsedSeconds + 59) / 60);
+        leadIn = false;
+        handler.removeCallbacks(tick);
+        resultMinutes = Math.max(1, (finalSeconds + 59) / 60);
         resultCount = 0;
+        resultKcal = 0;
+        float kg = Store.latestWeightKg(this);
         for (Step s : steps) {
-            if (!s.rest) {
+            // 只算真正练过的秒数：跳过的步骤不该计入消耗
+            if (s.rest) {
+                resultKcal += Math.round(Kcal.burn(kg, s.spent, Kcal.MET_REST));
+            } else {
                 resultCount++;
+                resultKcal += Math.round(Kcal.burn(kg, s.spent, Kcal.metFor(s.exercise)));
             }
+        }
+        if (resultKcal <= 0) {
+            resultKcal = Kcal.rough(resultMinutes);
         }
         if (!sessionMarked) {
             Store.markDone(this, Calendar.getInstance(), resultMinutes,
-                    sessionTitle, resultCount);
+                    sessionTitle, resultCount, resultKcal);
+            Store.clearPending(this);
             sessionMarked = true;
         }
+        paintRestActions(false);
         photo.setAlpha(0.55f);
         ring.setProgress(1f);
         ring.setSeconds(0);
@@ -488,7 +751,7 @@ public class WorkoutActivity extends Activity {
         tvState.setText("训练完成");
         tvState.setTextColor(Ui.ACCENT);
         tvExercise.setText("做得不错");
-        tvTip.setText("这次约 " + resultMinutes + " 分钟，记得补水。");
+        tvTip.setText("这次约 " + resultMinutes + " 分钟，消耗 " + resultKcal + " 千卡，记得补水。");
         tvSet.setText("已保存到本机 · 不联网");
         iconToggle.setIcon(IconView.CHECK);
         tvToggle.setText("完成");
@@ -511,13 +774,44 @@ public class WorkoutActivity extends Activity {
         it.putExtra(ResultActivity.EXTRA_TITLE, sessionTitle);
         it.putExtra(ResultActivity.EXTRA_MINUTES, resultMinutes);
         it.putExtra(ResultActivity.EXTRA_COUNT, resultCount);
+        it.putExtra(ResultActivity.EXTRA_KCAL, resultKcal);
         startActivity(it);
         finish();
     }
 
-    private void feedback(boolean up) {
-        Toast.makeText(this, up ? "已记为喜欢，仅保存在本机" : "已记录，下次会换动作",
+    private void toggleFavorite() {
+        if (index >= steps.size() || steps.get(index).rest) {
+            Toast.makeText(this, "休息中，先练完这一步", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Exercise e = steps.get(index).exercise;
+        boolean on = Store.toggleFavorite(this, e.id);
+        paintFavorite();
+        Toast.makeText(this, on ? "已收藏：" + e.name : "已取消收藏",
                 Toast.LENGTH_SHORT).show();
+    }
+
+    private void paintFavorite() {
+        if (index >= steps.size()) {
+            return;
+        }
+        Step s = steps.get(index);
+        View btn = findViewById(R.id.btn_like);
+        if (btn == null) {
+            return;
+        }
+        IconView ic = btn.findViewById(R.id.icon_like);
+        boolean on = s.exercise != null && Store.isFavorite(this, s.exercise.id);
+        ic.setColor(on ? Ui.ORANGE : Ui.INK_MUTED);
+    }
+
+    /** 不喜欢这个动作：直接换一个，本周都按新动作。 */
+    private void replaceCurrent() {
+        if (finished || index >= steps.size() || steps.get(index).rest) {
+            Toast.makeText(this, "休息中，不能换动作", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        showReplace(steps.get(index).exercise);
     }
 
     private void ensureVoice() {
@@ -527,6 +821,46 @@ public class WorkoutActivity extends Activity {
         } else if (!prefs.voice && voice != null) {
             voice.shutdown();
             voice = null;
+        }
+    }
+
+    // ---- 音乐与音频焦点 ----
+
+    private void requestFocus() {
+        if (audio == null) {
+            audio = (AudioManager) getSystemService(AUDIO_SERVICE);
+        }
+        if (audio == null) {
+            return;
+        }
+        if (focusRequest == null) {
+            AudioAttributes attrs = new AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build();
+            focusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                    .setAudioAttributes(attrs)
+                    .setOnAudioFocusChangeListener(change -> {
+                        if (change == AudioManager.AUDIOFOCUS_LOSS
+                                || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT
+                                || change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                            resumeMusicOnFocus = music != null && music.isPlaying();
+                            pauseMusic();
+                        } else if (change == AudioManager.AUDIOFOCUS_GAIN && resumeMusicOnFocus) {
+                            resumeMusicOnFocus = false;
+                            if (!musicManualPaused && !paused) {
+                                startMusic(true);
+                            }
+                        }
+                    })
+                    .build();
+        }
+        audio.requestAudioFocus(focusRequest);
+    }
+
+    private void releaseFocus() {
+        if (audio != null && focusRequest != null) {
+            audio.abandonAudioFocusRequest(focusRequest);
         }
     }
 
@@ -600,6 +934,7 @@ public class WorkoutActivity extends Activity {
             mp.prepareAsync();
             music = mp;
             musicSrc = src;
+            requestFocus();
         } catch (Throwable t) {
             releaseMusic();
             notifyMusicError();
@@ -800,6 +1135,31 @@ public class WorkoutActivity extends Activity {
         }
     }
 
+    /** 把当前进度写成一份快照，下次从首页「继续上次训练」接着练。 */
+    private void savePendingIfNeeded() {
+        if (finished || steps.isEmpty()) {
+            return;
+        }
+        int elapsed = elapsedSeconds();
+        if (index == 0 && elapsed < 15) {
+            // 还没真正开始，不留半截记录
+            return;
+        }
+        Store.Pending p = new Store.Pending();
+        p.dayIndex = dayIndex;
+        p.title = sessionTitle;
+        p.single = single;
+        p.index = index;
+        p.elapsedSeconds = elapsed;
+        p.rounds = totalRounds();
+        for (Step s : steps) {
+            p.ids.add(s.rest ? "" : s.exercise.id);
+            p.totals.add(s.total);
+            p.remains.add(Math.max(0, s.remaining));
+        }
+        Store.savePending(this, p);
+    }
+
     private void showExit() {
         if (finished) {
             finish();
@@ -833,7 +1193,7 @@ public class WorkoutActivity extends Activity {
         root.addView(title);
 
         TextView sub = new TextView(this);
-        sub.setText("已完成的动作会保留在本机记录里。");
+        sub.setText("选「稍后再做」会记住当前进度，下次接着练。");
         sub.setTextColor(Ui.INK_SOFT);
         sub.setTextSize(13);
         sub.setGravity(Gravity.CENTER);
@@ -843,7 +1203,7 @@ public class WorkoutActivity extends Activity {
 
         TextView resume = sheetAction("继续锻炼", Ui.ACCENT, true);
         TextView restart = sheetAction("重新开始此动作", Ui.INK, false);
-        TextView later = sheetAction("稍后再做", Ui.INK_MUTED, false);
+        TextView later = sheetAction("稍后再做，保存进度", Ui.INK_MUTED, false);
         root.addView(resume);
         root.addView(restart);
         root.addView(later);
@@ -858,6 +1218,7 @@ public class WorkoutActivity extends Activity {
         });
         later.setOnClickListener(v -> {
             dialog.dismiss();
+            savePendingIfNeeded();
             finish();
         });
 
@@ -940,6 +1301,7 @@ public class WorkoutActivity extends Activity {
         handler.removeCallbacksAndMessages(null);
         cues.release();
         releaseMusic();
+        releaseFocus();
         if (voice != null) {
             voice.shutdown();
             voice = null;

@@ -27,6 +27,7 @@ public class ResultActivity extends Activity {
     public static final String EXTRA_TITLE = "session_title";
     public static final String EXTRA_MINUTES = "session_minutes";
     public static final String EXTRA_COUNT = "session_count";
+    public static final String EXTRA_KCAL = "session_kcal";
 
     private static final String[] WEEK_LABEL = {"一", "二", "三", "四", "五", "六", "日"};
     private static final String[] FEEL_LABELS = {"太轻松", "刚刚好", "太吃力"};
@@ -37,6 +38,7 @@ public class ResultActivity extends Activity {
     private String title;
     private int minutes;
     private int count;
+    private int kcal;
 
     private final LinearLayout[] feelCells = new LinearLayout[3];
     private final IconView[] feelIcons = new IconView[3];
@@ -60,6 +62,11 @@ public class ResultActivity extends Activity {
         title = getIntent().getStringExtra(EXTRA_TITLE);
         minutes = Math.max(1, getIntent().getIntExtra(EXTRA_MINUTES, 1));
         count = Math.max(1, getIntent().getIntExtra(EXTRA_COUNT, 1));
+        kcal = getIntent().getIntExtra(EXTRA_KCAL, -1);
+        if (kcal < 0) {
+            // 旧入口或测试数据：按分钟数粗算，和报告页的回退口径一致
+            kcal = Kcal.rough(minutes);
+        }
         if (title == null || title.isEmpty()) {
             title = single == null ? "今日训练" : single;
         }
@@ -184,7 +191,7 @@ public class ResultActivity extends Activity {
         content.addView(stats, slp);
         stat(stats, String.valueOf(minutes), "分钟");
         stat(stats, String.valueOf(count), "个动作");
-        stat(stats, String.valueOf(minutes * 6), "千卡");
+        stat(stats, String.valueOf(kcal), "千卡");
 
         FrameLayout bubble = new FrameLayout(this);
         bubble.setBackground(Ui.round(this, 0x2EFFFFFF, 30f));

@@ -199,17 +199,37 @@ public class MainActivity extends Activity {
     private void renderCoach() {
         boolean doneToday = Store.dates(this).contains(Store.key(Calendar.getInstance()));
         Data.Day today = plan.get(todayIndex);
+        Store.Pending pending = Store.pending(this);
+        boolean resume = pending != null && !doneToday;
+
+        LinearLayout coach = findViewById(R.id.coach_row);
+        IconView coachIcon = findViewById(R.id.icon_coach);
         String copy;
-        if (doneToday) {
+        if (resume) {
+            // 上次没练完：把这一条变成「继续」入口，比让他自己在计划里找更直接
+            int left = Math.max(1, pending.ids.size() - pending.index);
+            copy = "上次「" + pending.title + "」还差一点，点这里接着练（剩 " + left + " 步）";
+            coachIcon.setIcon(IconView.PLAY);
+        } else if (doneToday) {
             copy = "今天已经练完了。做几组拉伸，给身体一点收尾。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else if (today.rest) {
             copy = "今天是恢复日。慢慢拉开肩背，明天状态会更好。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else if (!Store.hasProfile(this)) {
             copy = "先花半分钟告诉我你的目标，我来排好这一周。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else {
             copy = "欢迎回来！今天安排的是「" + today.title + "」，跟着节奏来就好。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         }
+        coachIcon.setColor(resume ? Ui.GREEN : Ui.ACCENT);
         tvCoach.setText(copy);
+        coach.setOnClickListener(resume
+                ? v -> startActivity(new Intent(this, WorkoutActivity.class)
+                .putExtra(WorkoutActivity.EXTRA_RESUME, true))
+                : null);
+        coach.setClickable(resume);
     }
 
     private void renderChallenges() {

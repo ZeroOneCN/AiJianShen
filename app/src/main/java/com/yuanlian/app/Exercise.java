@@ -1,6 +1,7 @@
 package com.yuanlian.app;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * 单个动作。
@@ -24,6 +25,9 @@ public class Exercise {
     /** 动作 id，对应 assets/img/<id>.jpg 与 assets/anim/<id>.webp */
     public final String img;
 
+    /** 预先拼好的小写检索串，列表每次输入都搜一遍 1324 条，不能每次再 toLowerCase。 */
+    private final String searchKey;
+
     public Exercise(String id, String name, String nameEn, String part, String target,
                     String kind, String gear, int seconds,
                     List<String> steps, List<String> mistakes, String img) {
@@ -38,7 +42,17 @@ public class Exercise {
         this.steps = steps;
         this.mistakes = mistakes;
         this.img = img == null ? "" : img;
+        this.searchKey = (name + "\u0000" + nameEn + "\u0000" + target).toLowerCase(Locale.ROOT);
     }
+
+    /** 关键字已经转成小写；部位传 null / 空 / 「全部」表示不限。 */
+    public boolean matches(String lowerKeyword, String part) {
+        if (part != null && !part.isEmpty() && !"全部".equals(part) && !this.part.equals(part)) {
+            return false;
+        }
+        return lowerKeyword == null || lowerKeyword.isEmpty() || searchKey.contains(lowerKeyword);
+    }
+
 
     public boolean needsGear() {
         return !gear.isEmpty();
