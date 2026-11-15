@@ -10,10 +10,8 @@ captures/
 *.apk
 *.aab
 
-# 本地缓存与授权素材（不随仓库分发）
+# 本地缓存
 .data/
-app/src/main/assets/img/
-app/src/main/assets/anim/
 
 # Python
 __pycache__/
@@ -29,5 +27,5 @@ build/shots/
 .DS_Store
 Thumbs.db
 
-# 本地调试样张（授权素材衍生）
+# 本地调试样张
 tools/cache/gymchk/
