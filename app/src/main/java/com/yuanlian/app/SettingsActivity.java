@@ -123,9 +123,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.8.1" : v;
+            return v == null || v.isEmpty() ? "1.8.2" : v;
         } catch (Exception e) {
-            return "1.8.1";
+            return "1.8.2";
         }
     }
 

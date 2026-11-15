@@ -509,11 +509,15 @@ public class WorkoutActivity extends Activity {
         }
     }
 
+    /** 预备倒计时也交给圆环自己逐帧推进，这里的参数只在暂停时用来定格。 */
     private void paintLead(int seconds) {
+        long total = Math.max(1, leadTotal) * 1000L;
         ring.setRingColor(Ui.ACCENT);
-        ring.setDone(false);
-        ring.setSeconds(seconds);
-        ring.setProgress(leadTotal <= 0 ? 0f : seconds / (float) leadTotal);
+        if (paused) {
+            ring.setRemaining(Math.max(0, seconds) * 1000L, total);
+        } else {
+            ring.setTime(deadline, total);
+        }
         tvState.setText("预备开始");
         tvState.setTextColor(Ui.ACCENT);
         iconToggle.setIcon(IconView.PAUSE);
@@ -521,8 +525,7 @@ public class WorkoutActivity extends Activity {
     }
 
     private void paintLeadDone() {
-        ring.setSeconds(0);
-        ring.setProgress(0f);
+        ring.clear();
     }
 
     private void show(int i) {
@@ -620,10 +623,13 @@ public class WorkoutActivity extends Activity {
 
     private void paintTime() {
         Step s = steps.get(index);
-        int sec = Math.max(0, s.remaining);
-        ring.setDone(false);
-        ring.setSeconds(sec);
-        ring.setProgress(s.total == 0 ? 0f : (float) sec / (float) s.total);
+        long total = Math.max(1, s.total) * 1000L;
+        if (paused) {
+            // 暂停时不推进，只把当前余量定格
+            ring.setRemaining(Math.max(0, s.remaining) * 1000L, total);
+        } else {
+            ring.setTime(deadline, total);
+        }
     }
 
     private void advance() {
@@ -817,10 +823,9 @@ public class WorkoutActivity extends Activity {
         }
         paintRestActions(false);
         photo.setAlpha(0.55f);
-        ring.setProgress(1f);
-        ring.setSeconds(0);
         ring.setRingColor(Ui.ACCENT);
-        ring.setDone(true);
+        // 环从停下的位置补满，再淡入对勾，不要直接跳到 100%
+        ring.finish();
         tvState.setText("训练完成");
         tvState.setTextColor(Ui.ACCENT);
         tvExercise.setText("做得不错");
