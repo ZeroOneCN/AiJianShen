@@ -17,12 +17,13 @@ import java.util.Locale;
  * 训练倒计时圆环：灰色轨道 + 彩色进度 + 中间大数字。
  *
  * 时间由内部逐帧推进（Choreographer），不再等外面 200ms 一次的整秒刷新：
- * 进度弧是连续滑过去的，数字换值时旧的向上淡出、新的从下方淡入。
+ * 进度弧是连续滑过去的；数字换值时逐位比对，只有内容变了的位做一次短滚动，
+ * 其余位保持静止——59 倒数到 50 的过程中十位不动，只有个位在走。
  * 暂停 / 跳过 / +15 秒这类突变走同一条平滑通道，不会「咔」一下跳一格。
  */
 public class TimerRingView extends View {
 
-    private static final long DIGIT_MS = 150;
+    private static final long DIGIT_MS = 210;
     private static final long CHECK_DELAY_MS = 80;
     private static final long CHECK_MS = 260;
     /** 单帧追赶系数：越大越跟手，越小越绵。 */
@@ -55,9 +56,15 @@ public class TimerRingView extends View {
     private boolean done;
     private long doneAt;
 
+    /** 当前整串文本；换值时逐位比对，只有内容变了的位才滚。 */
+    private String label = "";
+    private String prevLabel = "";
     private int digit = -1;
-    private int prevDigit = -1;
     private long digitAt;
+
+    /** 逐位布局的临时缓冲，避免每帧 new。 */
+    private final char[] one = new char[1];
+    private final float[] slot = new float[12];
 
     private boolean posted;
 
@@ -97,7 +104,7 @@ public class TimerRingView extends View {
 
     /** 从 now 起按 deadline 逐帧推进；totalMs 用来算进度弧的比例。 */
     public void setTime(long deadlineMs, long totalMs) {
-        this.totalMs = Math.max(1L, totalMs);
+        setTotal(totalMs);
         this.deadline = deadlineMs;
         done = false;
         if (!live) {
@@ -119,7 +126,7 @@ public class TimerRingView extends View {
 
     /** 静态显示一个剩余量（暂停中、或外部手动指定），不再自行走表。 */
     public void setRemaining(long remainMs, long totalMs) {
-        this.totalMs = Math.max(1L, totalMs);
+        setTotal(totalMs);
         live = false;
         done = false;
         targetMs = Math.max(0f, remainMs);
@@ -165,6 +172,15 @@ public class TimerRingView extends View {
         }
     }
 
+    /** 总时长变了意味着显示格式可能从「秒」切到「M:SS」，数字得重建。 */
+    private void setTotal(long total) {
+        long t = Math.max(1L, total);
+        if (t != totalMs) {
+            totalMs = t;
+            digit = -1;
+        }
+    }
+
     // ---------------------------------------------------------------- 逐帧推进
 
     private void advance() {
@@ -200,15 +216,15 @@ public class TimerRingView extends View {
 
     private void syncDigit(float ms) {
         int sec = (int) Math.ceil(Math.max(0f, ms) / 1000.0);
-        if (digit < 0) {
-            digit = sec;
-            prevDigit = sec;
-            digitAt = 0;
-        } else if (sec != digit) {
-            prevDigit = digit;
-            digit = sec;
-            digitAt = SystemClock.uptimeMillis();
+        if (sec == digit) {
+            return;
         }
+        String cur = fmt(sec);
+        boolean first = digit < 0 || label.isEmpty();
+        prevLabel = first ? cur : label;
+        label = cur;
+        digit = sec;
+        digitAt = first ? 0 : SystemClock.uptimeMillis();
     }
 
     private boolean wantsFrames() {
@@ -284,38 +300,108 @@ public class TimerRingView extends View {
     }
 
     private void drawDigits(Canvas canvas, float size) {
-        long now = SystemClock.uptimeMillis();
-        String cur = label(digit);
-        String prev = label(prevDigit);
-        boolean anim = digitAt > 0 && now - digitAt < DIGIT_MS && !cur.equals(prev);
-        float t = anim ? (now - digitAt) / (float) DIGIT_MS : 1f;
-        float e = ease.getInterpolation(t);
-
-        text.setTextSize(size * 0.38f);
-        float wide = text.measureText(cur);
-        float limit = size * 0.74f;
-        if (wide > limit) {
-            // 「1:30」这种会顶到环上，按需缩一点
-            text.setTextSize(size * 0.38f * (limit / wide));
+        String cur = label;
+        if (cur.isEmpty()) {
+            return;
         }
-        float base = size / 2f - (text.ascent() + text.descent()) / 2f;
-        float slide = size * 0.085f;
+        long now = SystemClock.uptimeMillis();
+        boolean anim = digitAt > 0 && now - digitAt < DIGIT_MS && !cur.equals(prevLabel);
+        float t = anim ? Math.min(1f, (now - digitAt) / (float) DIGIT_MS) : 1f;
+        float e = anim ? smooth(t) : 1f;
 
         canvas.save();
         canvas.clipRect(size * 0.08f, size * 0.14f, size * 0.92f, size * 0.86f);
-        if (anim) {
-            // 旧的先加速淡出、整体向上滑；新的压着它从下方顶上来
-            float out = 1f - e;
-            text.setAlpha((int) (255 * out * out));
-            canvas.drawText(prev, size / 2f, base - slide * e, text);
-            text.setAlpha((int) (255 * e));
-            canvas.drawText(cur, size / 2f, base + slide * (1f - e), text);
+        if (anim && prevLabel.length() != cur.length()) {
+            drawWhole(canvas, size, cur, prevLabel, e);
         } else {
-            text.setAlpha(255);
-            canvas.drawText(cur, size / 2f, base, text);
+            drawPerChar(canvas, size, cur, anim ? prevLabel : cur, anim, e);
         }
         canvas.restore();
         text.setAlpha(255);
+    }
+
+    /** 首尾都缓的 smoothstep：位移小的时候比减速插值更柔，不会一上来就窜一下。 */
+    private static float smooth(float t) {
+        float x = Math.max(0f, Math.min(1f, t));
+        return x * x * (3f - 2f * x);
+    }
+
+    /** 位数变了（9:59 → 10:00）：整串一起滚，逐位比对没有意义。 */
+    private void drawWhole(Canvas canvas, float size, String cur, String prev, float e) {
+        float ts = size * 0.38f;
+        float limit = size * 0.74f;
+        text.setTextSize(ts);
+        float w = Math.max(text.measureText(prev), text.measureText(cur));
+        if (w > limit) {
+            text.setTextSize(ts * (limit / w));
+        }
+        float base = size / 2f - (text.ascent() + text.descent()) / 2f;
+        float slide = size * 0.08f;
+        text.setAlpha((int) (255 * Math.pow(1f - e, 1.35)));
+        canvas.drawText(prev, size / 2f, base + slide * e, text);
+        text.setAlpha((int) (255 * Math.pow(e, 1.15)));
+        canvas.drawText(cur, size / 2f, base - slide * (1f - e), text);
+    }
+
+    /**
+     * 逐位绘制：内容没变的位一像素都不动，只有变了的位滚动。
+     * 方向向下——旧数字往下走、新数字从上方来，和「数字在减少」一致，
+     * 51→50 时十位纹丝不动，个位像里程表的末位那样走一格。
+     */
+    private void drawPerChar(Canvas canvas, float size, String cur, String prev, boolean anim, float e) {
+        float ts = size * 0.38f;
+        float limit = size * 0.74f;
+        float total = layout(cur, ts);
+        if (total > limit) {
+            total = layout(cur, ts * (limit / total));
+        }
+        float base = size / 2f - (text.ascent() + text.descent()) / 2f;
+        float slide = size * 0.16f;
+        // 旧的走得快一点、新的立得早一点：位移小而两字重叠时，中段不会糊成一团
+        float outA = (float) Math.pow(1f - e, 2.6);
+        float inA = (float) Math.pow(e, 0.5);
+        float x = size / 2f - total / 2f;
+
+        for (int i = 0; i < cur.length(); i++) {
+            char c = cur.charAt(i);
+            float cx = x + slot[i] / 2f;
+            if (!anim || i >= prev.length() || prev.charAt(i) == c) {
+                text.setAlpha(255);
+                one[0] = c;
+                canvas.drawText(one, 0, 1, cx, base, text);
+            } else {
+                text.setAlpha((int) (255 * outA));
+                one[0] = prev.charAt(i);
+                // 旧字基本原地淡出（只让 3 成位移），笔画不会和新字交叉成一团
+                canvas.drawText(one, 0, 1, cx, base + slide * 0.3f * e, text);
+                text.setAlpha((int) (255 * inA));
+                one[0] = c;
+                canvas.drawText(one, 0, 1, cx, base - slide * (1f - e), text);
+            }
+            x += slot[i];
+        }
+    }
+
+    /** 铺一遍每个字符的槽宽（数字统一取最宽的那个，换值时整行不会左右抖），返回总宽。 */
+    private float layout(String s, float ts) {
+        text.setTextSize(ts);
+        float num = 0f;
+        for (int d = 0; d < 10; d++) {
+            one[0] = (char) ('0' + d);
+            num = Math.max(num, text.measureText(one, 0, 1));
+        }
+        float total = 0f;
+        for (int i = 0; i < s.length() && i < slot.length; i++) {
+            char c = s.charAt(i);
+            if (c >= '0' && c <= '9') {
+                slot[i] = num;
+            } else {
+                one[0] = c;
+                slot[i] = text.measureText(one, 0, 1);
+            }
+            total += slot[i];
+        }
+        return total;
     }
 
     private void drawCheck(Canvas canvas, float size) {
@@ -340,7 +426,7 @@ public class TimerRingView extends View {
         tick.setAlpha(255);
     }
 
-    private String label(int sec) {
+    private String fmt(int sec) {
         if (sec < 0) {
             return "";
         }
