@@ -148,7 +148,7 @@ python tools/build_media_vector.py    # 矢量化 → assets/img、assets/anim
 
 ## 应用图标
 
-红底 + 展臂展示肌肉的线条剪影，图形由项目作者提供。母版是矢量文件 [art/icon.svg](art/icon.svg)，
+蓝底 + 展臂展示肌肉的线条剪影，图形由项目作者提供。母版是矢量文件 [art/icon.svg](art/icon.svg)，
 Android 端为 Adaptive Icon：背景是渐变 drawable，前景是 VectorDrawable（另带 Android 13
 单色图标），系统按任意密度实时栅格化，不存在放大插值。
 
