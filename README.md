@@ -148,13 +148,13 @@ python tools/build_media_vector.py    # 矢量化 → assets/img、assets/anim
 
 ## 应用图标
 
-红底 + 侧视硬拉剪影，项目原创。母版是矢量文件 [art/icon.svg](art/icon.svg)，
+红底 + 展臂展示肌肉的线条剪影，图形由项目作者提供。母版是矢量文件 [art/icon.svg](art/icon.svg)，
 Android 端为 Adaptive Icon：背景是渐变 drawable，前景是 VectorDrawable（另带 Android 13
 单色图标），系统按任意密度实时栅格化，不存在放大插值。
 
 ## 版权
 
-- 应用图标：圆练项目原创
+- 应用图标：项目作者提供的 SVG 图形
 - 动作条目 / 肌群 / 中文要领：`exercises-dataset`（**MIT**）
 - 演示图与动图：**© Gym visual**（<https://gymvisual.com/>），已购授权；
   详情页与截图页保留署名字样；授权素材不随本仓库分发
