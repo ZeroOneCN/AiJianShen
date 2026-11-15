@@ -31,14 +31,32 @@ public final class Ui {
     public static final int ACCENT_2  = 0xFF0075FF;
     public static final int ACCENT_HI = 0xFF0B9EFF;
     public static final int ACCENT_SOFT = 0xFFE9EFFF;
+    public static final int ACCENT_RING = 0xFFD9E4FF;
+    public static final int SEARCH    = 0xFFF2F3F5;
+    public static final int CARD_SOFT = 0xFFF4F5F7;
+    public static final int CREAM     = 0xFFFCE7C8;
+    public static final int CREAM_INK = 0xFF7A4B00;
+    public static final int GREEN     = 0xFF2B8A6E;
+    public static final int GREEN_2   = 0xFF3AA98C;
+    public static final int GREEN_SOFT= 0xFFE7F5F0;
+    public static final int RED       = 0xFFFF5B4A;
+    public static final int ORANGE    = 0xFFF5A623;
+    public static final int BLUE_TILE = 0xFF3E8BFF;
+    public static final int TEAL      = 0xFF27B7B0;
+    public static final int PURPLE    = 0xFF7D5CE6;
+    public static final int SLATE     = 0xFF6C7A89;
+    public static final int DARK_1    = 0xFF343434;
+    public static final int DARK_2    = 0xFF0B0B0B;
     public static final int LINE      = 0xFFEBEBEB;
     public static final int WHITE_80  = 0xCCFFFFFF;
     public static final int WHITE_60  = 0x99FFFFFF;
 
-    // ---- 圆角（dp）：规格里的 r30 / r25 按 0.75 换算后为 22.5 / 18.75 ----
+    // ---- 圆角（dp）----
     public static final float R_HERO = 22.5f;
     public static final float R_CARD = 18.75f;
     public static final float R_CHIP = 17f;
+    public static final float R_TILE = 13f;
+    public static final float R_SHEET = 28f;
     public static final float R_PILL = 75f;
 
     // ---- 字号（sp）：正文 14/13/12，标题 20/21，数字 52 ----
@@ -75,6 +93,10 @@ public final class Ui {
             tf = new Typeface.Builder(am, "fonts/outfit.ttf")
                     .setFontVariationSettings("'wght' " + weight)
                     .build();
+            // 中文走系统字体回退，需要带 bold 样式才会真正加粗。
+            if (weight >= 600) {
+                tf = Typeface.create(tf, Typeface.BOLD);
+            }
         } catch (Throwable t) {
             tf = Typeface.DEFAULT;
         }
@@ -128,6 +150,43 @@ public final class Ui {
                 new int[]{ACCENT_HI, ACCENT});
         d.setShape(GradientDrawable.RECTANGLE);
         d.setCornerRadius(dp(c, R_CARD));
+        return d;
+    }
+
+    /** 引导页的主行动按钮：深色渐变胶囊。 */
+    public static GradientDrawable gradientDarkPill(Context c) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{0xFF3A3A3A, DARK_2});
+        d.setShape(GradientDrawable.RECTANGLE);
+        d.setCornerRadius(dp(c, R_PILL));
+        return d;
+    }
+
+    /** 蓝色实心渐变胶囊，和原包 CTA 同一条蓝。 */
+    public static GradientDrawable gradientBluePill(Context c) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{ACCENT_2, ACCENT});
+        d.setShape(GradientDrawable.RECTANGLE);
+        d.setCornerRadius(dp(c, R_PILL));
+        return d;
+    }
+
+    public static GradientDrawable gradientCard(Context c, int start, int end, float radiusDp) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT, new int[]{start, end});
+        d.setShape(GradientDrawable.RECTANGLE);
+        d.setCornerRadius(dp(c, radiusDp));
+        return d;
+    }
+
+    public static GradientDrawable gradientVertical(Context c, int top, int bottom,
+                                                    float radiusDp) {
+        GradientDrawable d = new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM, new int[]{top, bottom});
+        d.setShape(GradientDrawable.RECTANGLE);
+        d.setCornerRadius(dp(c, radiusDp));
         return d;
     }
 

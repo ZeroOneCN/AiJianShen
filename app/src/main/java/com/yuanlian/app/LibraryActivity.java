@@ -27,6 +27,8 @@ import java.util.List;
 
 public class LibraryActivity extends Activity {
 
+    public static final String EXTRA_PART = "part";
+
     private LinearLayout chipBox;
     private ListView listView;
     private EditText etSearch;
@@ -42,17 +44,30 @@ public class LibraryActivity extends Activity {
         super.onCreate(savedInstanceState);
         Data.init(this);
         setContentView(R.layout.activity_library);
+        Nav.chrome(this);
+        Nav.insets(findViewById(R.id.root));
 
         chipBox = findViewById(R.id.chips);
         listView = findViewById(R.id.list);
         etSearch = findViewById(R.id.et_search);
         tvCount = findViewById(R.id.tv_count);
 
+        TextView title = findViewById(R.id.tv_title);
+        Ui.font(title, 800);
+        IconView back = findViewById(R.id.icon_back);
+        back.setIcon(IconView.BACK);
+        back.setColor(Ui.INK);
         findViewById(R.id.btn_back).setOnClickListener(v -> finish());
+
+        LinearLayout searchBar = findViewById(R.id.search_bar);
+        searchBar.setBackground(Ui.round(this, Ui.SEARCH, 23f));
+        IconView searchIcon = findViewById(R.id.icon_search);
+        searchIcon.setIcon(IconView.SEARCH);
+        searchIcon.setColor(Ui.INK_SOFT);
 
         Ui.font(tvCount, 500);
         Ui.font(etSearch, 400);
-        etSearch.setBackground(Ui.ripple(this, Ui.round(this, Ui.SURFACE, Ui.R_CHIP), 0x11000000));
+        etSearch.setBackgroundColor(Color.TRANSPARENT);
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int a, int b, int c) {
@@ -73,6 +88,13 @@ public class LibraryActivity extends Activity {
         cats.addAll(Data.parts());
         for (String c : cats) {
             addChip(c);
+        }
+
+        String part = getIntent().getStringExtra(EXTRA_PART);
+        if (part != null && cats.contains(part)) {
+            selectedPart = part;
+        } else {
+            selectedPart = "全部";
         }
 
         adapter = new ExerciseAdapter(this);
@@ -361,7 +383,7 @@ public class LibraryActivity extends Activity {
 
             PhotoView photo = v.findViewById(R.id.photo);
             if (photo != null) {
-                photo.setRadiusDp(16f);
+                photo.setRadiusDp(14f);
                 photo.setZoom(1f);
                 photo.setAnimated(false);
                 photo.bind(e);
@@ -369,7 +391,8 @@ public class LibraryActivity extends Activity {
 
             name.setText(e.name);
             Ui.font(name, 600);
-            Ui.textSize(name, Ui.T_BODY);
+            Ui.textSize(name, 16f);
+            Ui.font(sub, 400);
 
             String s = (e.target.isEmpty() ? "" : e.target + " · ") + e.kind
                     + (e.needsGear() ? " · 需" + e.gear : "") + " · " + e.seconds + " 秒";

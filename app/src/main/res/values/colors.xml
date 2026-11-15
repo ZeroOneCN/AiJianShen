@@ -10,6 +10,9 @@
     <color name="accent_2">#0075FF</color>
     <color name="accent_soft">#E9EFFF</color>
     <color name="line">#EBEBEB</color>
+    <color name="cream">#FCE7C8</color>
+    <color name="cream_ink">#7A4B00</color>
+    <color name="green">#2B8A6E</color>
     <color name="white">#FFFFFF</color>
     <color name="white_80">#CCFFFFFF</color>
     <color name="white_60">#99FFFFFF</color>

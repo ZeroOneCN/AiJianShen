@@ -51,6 +51,20 @@ public class Exercise {
         return !img.isEmpty();
     }
 
+    /** 呼吸提示：按动作类型给一句可执行的话。 */
+    public String breathingTip() {
+        if ("拉伸".equals(kind)) {
+            return "保持均匀呼吸，拉到有轻微牵拉感即可，不要憋气。";
+        }
+        if ("有氧".equals(kind) || "爆发".equals(kind)) {
+            return "鼻吸口呼，跟着动作节奏呼吸，别屏住气。";
+        }
+        if ("核心".equals(part)) {
+            return "发力时呼气、还原时吸气，腰背始终贴稳。";
+        }
+        return "发力时呼气，还原时吸气；动作慢一点，呼吸跟上。";
+    }
+
     /** 训练页展示用：取前两步要领，过长自动截断。 */
     public String brief() {
         if (steps.isEmpty()) {

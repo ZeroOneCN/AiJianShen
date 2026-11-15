@@ -275,6 +275,30 @@ public final class Data {
         return weekPlan(p).get(todayIndex(cal));
     }
 
+    /** 应用本周换动作结果，其余字段保持不变。 */
+    public static Day withOverrides(Day d, Map<String, String> overrides) {
+        if (d == null || overrides == null || overrides.isEmpty()) {
+            return d;
+        }
+        List<Exercise> list = new ArrayList<>(d.exercises.size());
+        for (Exercise e : d.exercises) {
+            Exercise chosen = e;
+            java.util.Set<String> seen = new HashSet<>();
+            seen.add(e.id);
+            String next = overrides.get(e.id);
+            for (int hop = 0; next != null && !next.isEmpty() && hop < 6; hop++) {
+                Exercise alt = byId(next);
+                if (alt == null || !seen.add(alt.id)) {
+                    break;
+                }
+                chosen = alt;
+                next = overrides.get(alt.id);
+            }
+            list.add(chosen);
+        }
+        return new Day(d.title, d.focus, list, d.rest, d.rounds, d.seconds, d.restSeconds);
+    }
+
     private static Day trainingDay(PlanProfile p, int dayIndex, int seed) {
         Theme[] pool = THEMES[Math.max(0, Math.min(3, p.goal))];
         Theme theme = pool[Math.floorMod(seed / 7 + dayIndex, pool.length)];
