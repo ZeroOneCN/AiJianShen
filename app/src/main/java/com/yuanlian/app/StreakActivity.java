@@ -313,11 +313,13 @@ public class StreakActivity extends Activity {
         List<Store.Session> all = Store.sessions(this);
         StringBuilder sb = new StringBuilder();
         int count = 0;
+        int logged = 0;
         for (Store.Session s : all) {
             if (!key.equals(s.date)) {
                 continue;
             }
             count++;
+            logged += s.minutes;
             sb.append(count).append(". ").append(s.title)
                     .append(" · ").append(s.minutes).append(" 分钟");
             if (s.feel >= 0) {
@@ -328,7 +330,7 @@ public class StreakActivity extends Activity {
         if (sb.length() == 0) {
             sb.append("当天完成了 ").append(minutes).append(" 分钟训练。\n");
         }
-        sb.append("\n当天合计 ").append(minutes).append(" 分钟。");
+        sb.append("\n当天合计 ").append(count > 0 ? logged : minutes).append(" 分钟。");
         InfoDialog.show(this, key, sb.toString());
     }
 }
