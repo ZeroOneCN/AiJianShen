@@ -5,16 +5,94 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 圆环：代表「圆练」 -->
-    <path
-        android:pathData="M54,30 A24,24 0 1,1 53.9,30"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="9"
-        android:strokeLineCap="round"
-        android:fillColor="@android:color/transparent" />
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="1.18"
+        android:scaleY="1.18"
+        android:translateY="-4">
 
-    <!-- 起点圆点：训练进度 -->
-    <path
-        android:pathData="M54,22 m-7,0 a7,7 0 1,0 14,0 a7,7 0 1,0 -14,0"
-        android:fillColor="#FFFFFF" />
+        <!-- 躯干（前倾） -->
+        <path
+            android:pathData="M51.6,61.8 C54.4,57.2 57,52.8 60.2,50"
+            android:strokeWidth="9.6"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <!-- 手臂 -->
+        <path
+            android:pathData="M60.6,51.6 L58.6,66.8"
+            android:strokeWidth="4.8"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+        <!-- 前腿 -->
+        <path
+            android:pathData="M51.8,63.2 L57.2,72"
+            android:strokeWidth="7.8"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M57.2,72 L57,81"
+            android:strokeWidth="5"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+        <!-- 后腿 -->
+        <path
+            android:pathData="M50.2,63.4 L45.8,72.8"
+            android:strokeWidth="7.8"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+        <path
+            android:pathData="M45.8,72.8 L46.2,81"
+            android:strokeWidth="5"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+        <!-- 杠 -->
+        <path
+            android:pathData="M35.2,67.2 L77.8,67.2"
+            android:strokeWidth="3.4"
+            android:strokeColor="#FFFFFF"
+            android:strokeLineCap="round" />
+
+        <!-- 肩、手与关节补面 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M58,43.4 a4.2,4.2 0 1,0 8.4,0 a4.2,4.2 0 1,0 -8.4,0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M55.6,51 a4.4,4.4 0 1,0 8.8,0 a4.4,4.4 0 1,0 -8.8,0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M56,67 a2.6,2.6 0 1,0 5.2,0 a2.6,2.6 0 1,0 -5.2,0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M56.2,59.2 a3.4,3.4 0 1,0 6.8,0 a3.4,3.4 0 1,0 -6.8,0" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M53.8,62.8 a3.6,3.6 0 1,0 7.2,0 a3.6,3.6 0 1,0 -7.2,0" />
+
+        <!-- 脚 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M54,80.6 h8.2 a1.9,1.9 0 0 1 0,3.8 h-8.2 a1.9,1.9 0 0 1 0,-3.8 z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M41.6,80.6 h7.8 a1.9,1.9 0 0 1 0,3.8 h-7.8 a1.9,1.9 0 0 1 0,-3.8 z" />
+
+        <!-- 配重片 -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M34.9,60.2 A3.3,3.3 0 0 0 31.6,63.5 V70.9 A3.3,3.3 0 0 0 34.9,74.2 A3.3,3.3 0 0 0 38.2,70.9 V63.5 A3.3,3.3 0 0 0 34.9,60.2 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M78.1,60.2 A3.3,3.3 0 0 0 74.8,63.5 V70.9 A3.3,3.3 0 0 0 78.1,74.2 A3.3,3.3 0 0 0 81.4,70.9 V63.5 A3.3,3.3 0 0 0 78.1,60.2 Z" />
+
+        <!-- 配重片压线 -->
+        <path
+            android:fillColor="#B3121C"
+            android:pathData="M34.4,63 h1 a0.5,0.5 0 0 1 0.5,0.5 v7.4 a0.5,0.5 0 0 1 -0.5,0.5 h-1 a0.5,0.5 0 0 1 -0.5,-0.5 v-7.4 a0.5,0.5 0 0 1 0.5,-0.5 z" />
+        <path
+            android:fillColor="#B3121C"
+            android:pathData="M77.6,63 h1 a0.5,0.5 0 0 1 0.5,0.5 v7.4 a0.5,0.5 0 0 1 -0.5,0.5 h-1 a0.5,0.5 0 0 1 -0.5,-0.5 v-7.4 a0.5,0.5 0 0 1 0.5,-0.5 z" />
+    </group>
 </vector>

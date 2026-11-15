@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 108 108">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF6A4D"/>
+      <stop offset="0.55" stop-color="#E22B2B"/>
+      <stop offset="1" stop-color="#B3121C"/>
+    </linearGradient>
+  </defs>
+  <rect width="108" height="108" fill="url(#bg)"/>
+  <g transform="translate(0 -4) translate(54 54) scale(1.18) translate(-54 -54)">
+  <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 躯干（前倾，背部微弧） -->
+    <path d="M51.6 61.8 C54.4 57.2 57 52.8 60.2 50.0" stroke-width="9.6"/>
+    <!-- 手臂 -->
+    <path d="M60.6 51.6 L58.6 66.8" stroke-width="4.8"/>
+    <!-- 前腿 -->
+    <path d="M51.8 63.2 L57.2 72.0" stroke-width="7.8"/>
+    <path d="M57.2 72.0 L57.0 81.0" stroke-width="5"/>
+    <!-- 后腿 -->
+    <path d="M50.2 63.4 L45.8 72.8" stroke-width="7.8"/>
+    <path d="M45.8 72.8 L46.2 81.0" stroke-width="5"/>
+    <!-- 杠 -->
+    <path d="M35.2 67.2 H77.8" stroke-width="3.4"/>
+  </g>
+  <g fill="#FFFFFF">
+    <circle cx="62.2" cy="43.4" r="4.2"/>
+    <circle cx="60.0" cy="51.0" r="4.4"/>
+    <circle cx="58.6" cy="67.0" r="2.6"/>
+    <circle cx="59.6" cy="59.2" r="3.4"/>
+    <circle cx="57.4" cy="62.8" r="3.6"/>
+    <!-- 脚 -->
+    <path d="M54.0 80.6 h8.2 a1.9 1.9 0 0 1 0 3.8 h-8.2 a1.9 1.9 0 0 1 0 -3.8 z"/>
+    <path d="M41.6 80.6 h7.8 a1.9 1.9 0 0 1 0 3.8 h-7.8 a1.9 1.9 0 0 1 0 -3.8 z"/>
+    <!-- 配重片 -->
+    <rect x="31.6" y="60.2" width="6.6" height="14" rx="3.1"/>
+    <rect x="74.8" y="60.2" width="6.6" height="14" rx="3.1"/>
+  </g>
+  <g fill="#B3121C" opacity="0.85">
+    <rect x="34.4" y="63.0" width="1" height="8.4" rx="0.5"/>
+    <rect x="77.6" y="63.0" width="1" height="8.4" rx="0.5"/>
+  </g>
+</g>
+</svg>
