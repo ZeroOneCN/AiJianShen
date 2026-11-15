@@ -124,7 +124,9 @@ public class WorkoutActivity extends Activity {
         Nav.chrome(this);
         Nav.insets(findViewById(R.id.root));
 
-        findViewById(R.id.media_area).setBackgroundColor(0xFFEEF1F6);
+        findViewById(R.id.media_area).setBackgroundColor(Ui.SURFACE);
+        getWindow().setStatusBarColor(Ui.SURFACE);
+        getWindow().setNavigationBarColor(Ui.SURFACE);
 
         photo = findViewById(R.id.photo);
         photo.setRadiusDp(24f);
