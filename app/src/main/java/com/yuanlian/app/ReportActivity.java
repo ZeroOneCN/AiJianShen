@@ -128,7 +128,7 @@ public class ReportActivity extends Activity {
     private void render() {
         int sessions = Store.daysTrained(this);
         int minutes = Store.totalMinutes(this);
-        int kcal = minutes * 6;
+        int kcal = Store.totalKcal(this);
 
         fillStat(findViewById(R.id.stat_col_1), IconView.TROPHY, String.valueOf(sessions), "运动");
         fillStat(findViewById(R.id.stat_col_2), IconView.FLAME, String.valueOf(kcal), "千卡");
@@ -379,6 +379,90 @@ public class ReportActivity extends Activity {
         }
     }
 
+    /** 删除一条训练记录前的确认框。 */
+    private void confirmDelete(Dialog listDialog, Store.Session s) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(Ui.round(this, Ui.SURFACE, 24f));
+        int p = Ui.dpi(this, 22);
+        root.setPadding(p, p, p, p);
+
+        TextView title = new TextView(this);
+        title.setText("删除这条记录？");
+        title.setTextColor(Ui.INK);
+        title.setTextSize(19);
+        Ui.font(title, 800);
+        root.addView(title);
+
+        TextView sub = new TextView(this);
+        sub.setText(s.title + " · " + s.minutes + " 分钟，删除后当天与累计分钟会一起扣回。");
+        sub.setTextColor(Ui.INK_SOFT);
+        sub.setTextSize(13);
+        sub.setLineSpacing(Ui.dp(this, 3), 1f);
+        sub.setPadding(0, Ui.dpi(this, 6), 0, 0);
+        Ui.font(sub, 400);
+        root.addView(sub);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 48));
+        alp.topMargin = Ui.dpi(this, 18);
+        root.addView(actions, alp);
+
+        TextView cancel = new TextView(this);
+        cancel.setText("保留");
+        cancel.setTextColor(Ui.INK_MUTED);
+        cancel.setTextSize(15);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 24f), 0x14000000));
+        Ui.font(cancel, 600);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        clp.rightMargin = Ui.dpi(this, 10);
+        actions.addView(cancel, clp);
+
+        TextView del = new TextView(this);
+        del.setText("删除");
+        del.setTextColor(Color.WHITE);
+        del.setTextSize(15);
+        del.setGravity(Gravity.CENTER);
+        del.setBackground(Ui.ripple(this, Ui.round(this, Ui.RED, 24f), 0x33FFFFFF));
+        Ui.font(del, 700);
+        actions.addView(del, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        del.setOnClickListener(v -> {
+            boolean ok = Store.deleteSession(this, s.ts);
+            dialog.dismiss();
+            if (ok) {
+                listDialog.dismiss();
+                render();
+                Toast.makeText(this, "已删除这条记录", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "这条记录已经不在了", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.setContentView(root);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp = w.getAttributes();
+            lp.dimAmount = 0.45f;
+            w.setAttributes(lp);
+        }
+        dialog.show();
+        if (w != null) {
+            w.setLayout(getResources().getDisplayMetrics().widthPixels - Ui.dpi(this, 64),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
     private void showRecords() {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -394,6 +478,14 @@ public class ReportActivity extends Activity {
         title.setTextSize(20);
         Ui.font(title, 800);
         root.addView(title);
+
+        TextView tip = new TextView(this);
+        tip.setText("长按某条记录可以删除，当天的分钟数会一起扣回。");
+        tip.setTextColor(Ui.INK_SOFT);
+        tip.setTextSize(12);
+        tip.setPadding(0, Ui.dpi(this, 5), 0, 0);
+        Ui.font(tip, 400);
+        root.addView(tip);
 
         List<Store.Session> list = Store.sessions(this);
 
@@ -466,7 +558,12 @@ public class ReportActivity extends Activity {
                 min.setTextColor(Ui.ACCENT);
                 min.setTextSize(13);
                 Ui.font(min, 600);
-                row.addView(min);
+                row.addView(min, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                row.setOnLongClickListener(v -> {
+                    confirmDelete(dialog, s);
+                    return true;
+                });
 
                 View divider = new View(this);
                 divider.setBackgroundColor(0xFFEFEFF2);

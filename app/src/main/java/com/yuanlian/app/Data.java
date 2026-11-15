@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -122,16 +123,10 @@ public final class Data {
 
     /** 关键字搜索：中文名、英文名、目标肌群。 */
     public static List<Exercise> search(String keyword, String part) {
-        String k = keyword == null ? "" : keyword.trim().toLowerCase();
+        String k = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
         List<Exercise> out = new ArrayList<>();
         for (Exercise e : ALL) {
-            if (part != null && !part.isEmpty() && !"全部".equals(part) && !e.part.equals(part)) {
-                continue;
-            }
-            if (k.isEmpty()
-                    || e.name.toLowerCase().contains(k)
-                    || e.nameEn.toLowerCase().contains(k)
-                    || e.target.toLowerCase().contains(k)) {
+            if (e.matches(k, part)) {
                 out.add(e);
             }
         }
@@ -250,6 +245,11 @@ public final class Data {
     public static List<Day> weekPlan(PlanProfile p) {
         PlanProfile profile = p == null ? PlanProfile.defaults() : p;
         int week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR);
+        String key = planKey(profile, week);
+        List<Day> cached = PLAN_CACHE.get(key);
+        if (cached != null) {
+            return cached;
+        }
         int seed = week * 7 + profile.seed();
         Set<Integer> training = new HashSet<>();
         int[] days = TRAIN_DAYS[Math.max(2, Math.min(6, profile.days))];
@@ -265,7 +265,28 @@ public final class Data {
                 out.add(recoveryDay(profile, i, seed + i * 17));
             }
         }
+        // 首页、详情、训练页各自会取一次计划，同一周同一条件只排一次
+        PLAN_CACHE.put(key, out);
         return out;
+    }
+
+    /** 计划缓存：一周内同一套条件结果相同，键里带上会改变结果的所有字段。 */
+    private static final Map<String, List<Day>> PLAN_CACHE =
+            new LinkedHashMap<String, List<Day>>(8) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, List<Day>> eldest) {
+                    return size() > 4;
+                }
+            };
+
+    private static String planKey(PlanProfile p, int week) {
+        return week + "|" + p.seed() + "|" + p.goal + "|" + p.level + "|" + p.days
+                + "|" + p.minutes + "|" + p.gearMask + "|" + p.focusMask();
+    }
+
+    /** 条件变了（例如在定制页改完保存）时清掉缓存。 */
+    public static void clearPlanCache() {
+        PLAN_CACHE.clear();
     }
 
     public static Day today(PlanProfile p, Calendar cal) {

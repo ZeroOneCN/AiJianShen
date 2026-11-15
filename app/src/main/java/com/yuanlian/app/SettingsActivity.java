@@ -32,6 +32,9 @@ public class SettingsActivity extends Activity {
         TextView title = findViewById(R.id.tv_title);
         Ui.font(title, 800);
 
+        TextView footer = findViewById(R.id.tv_footer);
+        footer.setText("私人健身教练 " + versionName() + " · 本地训练版");
+
         IconView user = findViewById(R.id.icon_user);
         user.setIcon(IconView.USER);
         user.setColor(Ui.ACCENT);
@@ -102,7 +105,17 @@ public class SettingsActivity extends Activity {
                 v -> share());
         addRow(more, IconView.STAR, Ui.SLATE, "关于私人健身教练", "版本与说明", true,
                 v -> info("关于私人健身教练",
-                        "私人健身教练 1.6\n\n训练记录、体重与计划条件只保存在本机，不需要账号，也不上传。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+                        "私人健身教练 " + versionName() + "\n\n训练记录、体重与计划条件只保存在本机，不需要账号，也不上传。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+    }
+
+    /** 版本号从安装包读取，避免和 build.gradle 里写的版本对不上。 */
+    private String versionName() {
+        try {
+            String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            return v == null || v.isEmpty() ? "1.7" : v;
+        } catch (Exception e) {
+            return "1.7";
+        }
     }
 
     @Override

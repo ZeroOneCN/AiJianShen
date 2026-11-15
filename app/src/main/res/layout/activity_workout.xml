@@ -199,6 +199,30 @@
             </LinearLayout>
         </LinearLayout>
 
+        <!-- 休息时才出现：多歇 15 秒 / 直接进入下一个动作 -->
+        <LinearLayout
+            android:id="@+id/rest_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btn_more_rest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+15 秒" />
+
+            <TextView
+                android:id="@+id/btn_skip_rest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:text="跳过休息" />
+        </LinearLayout>
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
