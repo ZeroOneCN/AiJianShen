@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>圆练 · 真机截图</title>
+<style>
+  :root{
+    --ink:#1C212C; --ink-soft:#888888; --bg:#F8F8F8; --surface:#fff;
+    --accent:#004AFF; --soft:#E9EFFF; --line:#EDEFF3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Outfit","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); padding:48px 32px 64px;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{max-width:1180px;margin:0 auto 36px}
+  .eyebrow{color:var(--accent);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+  h1{font-size:38px;font-weight:700;letter-spacing:-.02em;margin-top:10px}
+  .sub{color:var(--ink-soft);font-size:15px;margin-top:12px;line-height:1.7;max-width:760px}
+  .meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .pill{background:var(--soft);color:var(--accent);font-size:12px;font-weight:600;
+        padding:7px 14px;border-radius:100px}
+  .grid{max-width:1180px;margin:0 auto;display:grid;
+        grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
+  figure{background:var(--surface);border-radius:26px;padding:14px;box-shadow:0 2px 18px rgba(28,33,44,.06)}
+  figure img{width:100%;border-radius:18px;display:block}
+  figcaption{padding:14px 6px 4px}
+  figcaption b{font-size:15px;font-weight:600;display:block}
+  figcaption span{font-size:12.5px;color:var(--ink-soft);display:block;margin-top:5px;line-height:1.6}
+  footer{max-width:1180px;margin:44px auto 0;color:var(--ink-soft);font-size:12.5px;line-height:1.8}
+  footer code{background:var(--surface);padding:2px 7px;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">YuanLian · v1.5</div>
+  <h1>圆练 · 实测截图</h1>
+  <p class="sub">
+    以下均为 APK 安装后模拟器运行截屏，非设计稿。设备 1080×1920 / 480dpi。<br>
+    这一版把动作素材矢量化重制：静态图 960px、动图 640px，纯白底与白色卡片无缝相接；同时加入「定制计划」：
+    按目标、水平、频率、时长、器械和重点部位生成一周安排。动作条目、肌群与中文要领来自
+    exercises-dataset（MIT），演示图与动图来自 Gym visual（已购授权）。
+  </p>
+  <div class="meta">
+    <div class="pill">定制一周计划</div>
+    <div class="pill">1324 个动作</div>
+    <div class="pill">10 个部位</div>
+    <div class="pill">1324 段 640px 循环动图</div>
+    <div class="pill">零网络权限</div>
+    <div class="pill">约 168 MB</div>
+  </div>
+</header>
+
+<div class="grid">
+  <figure>
+    <img src="screens/v15-home.png" alt="首页">
+    <figcaption><b>首页</b><span>定制计划卡、恢复日大卡、连续天数 / 本周完成 / 累计分钟；
+      素材在白卡里没有边框，倒计时以外的区域全是白的</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-plan-goal.png" alt="定制计划 · 目标">
+    <figcaption><b>定制计划 · 目标</b><span>目标、水平、频率三组条件；底部实时预览这次会排成
+      多少动作 × 多少轮、大约几分钟</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-plan-gear.png" alt="定制计划 · 器械与重点">
+    <figcaption><b>定制计划 · 条件</b><span>时长决定轮数，器械决定动作池（徒手始终保留），
+      重点部位可多选，全身则不限部位</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-week.png" alt="一周安排">
+    <figcaption><b>一周安排</b><span>训练日按目标换主题（全身燃脂、间歇有氧…），
+      非训练日自动排 5 个徒手拉伸；行内直接显示轮次与预计时长</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-library.png" alt="动作库">
+    <figcaption><b>动作库</b><span>1324 条全量动作，10 个部位筛选；列表用 64dp 静态缩略图，
+      器械与目标肌群直接标在副标题里</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-detail.png" alt="动作详情">
+    <figcaption><b>动作详情</b><span>白底循环演示铺满弹窗上半部，下面是中英文名、标签与分步要领；
+      底部固定「关闭 / 练这个动作」</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-workout.png" alt="训练中">
+    <figcaption><b>训练播放器</b><span>按计划的轮次和秒数走：「第 1/4 轮 · 第 1/6 个动作」，
+      倒计时画成卡片描边</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/v15-rest.png" alt="组间休息">
+    <figcaption><b>组间休息</b><span>动作之间按目标插入 15–30 秒休息；一轮结束时提示
+      「下一轮马上开始」，可暂停或跳过</span></figcaption>
+  </figure>
+</div>
+
+<footer>
+  构建：<code>./gradlew assembleDebug</code> · 工具链 Gradle 9.3.1 + AGP 9.1.0 + JDK 17 · minSdk 26 / targetSdk 36<br>
+  动作条目 / 肌群 / 中文要领：exercises-dataset（MIT）；演示图与动图：© Gym visual（已购授权）。<br>
+  设计规格（圆角 / 配色 / 字号）量自样本 APK 资源，代码与本版布局为本项目原创。
+</footer>
+</body>
+</html>
