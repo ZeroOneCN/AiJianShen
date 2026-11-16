@@ -40,7 +40,6 @@ public final class UiList {
         IconView ic = new IconView(a);
         ic.setIcon(IconView.BACK);
         ic.setColor(Ui.INK);
-        ic.setStrokeDp(2f);
         btn.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(a, 20), Ui.dpi(a, 20), Gravity.CENTER));
         btn.setOnClickListener(back);
@@ -120,7 +119,6 @@ public final class UiList {
         IconView ic = new IconView(a);
         ic.setIcon(icon);
         ic.setColor(Color.WHITE);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(a, 22), Ui.dpi(a, 22), Gravity.CENTER));
 

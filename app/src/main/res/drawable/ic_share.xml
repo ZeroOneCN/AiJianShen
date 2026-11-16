@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 线性图标，24 视口 / 2 单位描边 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M18 2.8A2.4 2.4 0 1 1 18 7.6A2.4 2.4 0 1 1 18 2.8Z"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M6 9.6A2.4 2.4 0 1 1 6 14.4A2.4 2.4 0 1 1 6 9.6Z"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M18 16.4A2.4 2.4 0 1 1 18 21.2A2.4 2.4 0 1 1 18 16.4Z"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M8.2 10.9L15.8 6.4"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M8.2 13.1L15.8 17.6"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+</vector>

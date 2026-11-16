@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 刷新：弧线与箭头由同一条切线推导，箭头永远落在弧口上 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M19.05 9.43A7.5 7.5 0 1 1 12 4.5M8.95 2.59L12 4.5L8.95 6.41"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+</vector>

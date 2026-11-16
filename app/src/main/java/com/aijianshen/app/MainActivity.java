@@ -346,7 +346,7 @@ public class MainActivity extends Activity {
 
     private LinearLayout.LayoutParams challengeLp() {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                Ui.dpi(this, 318), Ui.dpi(this, 256));
+                Ui.dpi(this, 300), Ui.dpi(this, 172));
         lp.rightMargin = Ui.dpi(this, 12);
         return lp;
     }
@@ -360,67 +360,52 @@ public class MainActivity extends Activity {
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
-        int p = Ui.dpi(this, 16);
+        int p = Ui.dpi(this, 13);
         content.setPadding(p, p, p, p);
         card.addView(content, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-        LinearLayout top = new LinearLayout(this);
-        top.setOrientation(LinearLayout.HORIZONTAL);
-        top.setGravity(Gravity.CENTER_VERTICAL);
-        content.addView(top, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 20)));
 
         TextView badgeView = new TextView(this);
         badgeView.setText(badge);
         badgeView.setTextColor(Ui.CREAM_INK);
         badgeView.setTextSize(11);
         badgeView.setGravity(Gravity.CENTER);
-        badgeView.setPadding(Ui.dpi(this, 10), Ui.dpi(this, 4),
-                Ui.dpi(this, 10), Ui.dpi(this, 4));
-        badgeView.setBackground(Ui.round(this, Ui.CREAM, 11f));
+        badgeView.setPadding(Ui.dpi(this, 9), Ui.dpi(this, 2),
+                Ui.dpi(this, 9), Ui.dpi(this, 2));
+        badgeView.setBackground(Ui.round(this, Ui.CREAM, 10f));
         Ui.font(badgeView, 600);
-        top.addView(badgeView);
+        content.addView(badgeView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 20)));
 
+        // 标题让出右上角缩略图的位置，避免文字压到图上
         TextView title = new TextView(this);
         title.setText(day.rest ? "恢复与拉伸" : day.title);
         title.setTextColor(Color.WHITE);
-        title.setTextSize(23);
-        title.setLineSpacing(Ui.dp(this, 1.5f), 1f);
-        title.setMaxLines(2);
+        title.setTextSize(21);
+        title.setIncludeFontPadding(false);
+        title.setMaxLines(1);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
         Ui.font(title, 800);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = Ui.dpi(this, 8);
-        tlp.rightMargin = Ui.dpi(this, 88);
+        tlp.topMargin = Ui.dpi(this, 9);
+        tlp.rightMargin = Ui.dpi(this, 78);
         content.addView(title, tlp);
 
-        LinearLayout grid = new LinearLayout(this);
-        grid.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
+        // 一行说完时长 / 难度 / 重点 / 器械，比四格标签网格干净，也省下 60dp 高度
+        TextView meta = new TextView(this);
+        meta.setText(metaLine(day));
+        meta.setTextColor(0xE0FFFFFF);
+        meta.setTextSize(11.5f);
+        meta.setIncludeFontPadding(false);
+        meta.setMaxLines(1);
+        meta.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        Ui.font(meta, 500);
+        LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        glp.topMargin = Ui.dpi(this, 10);
-        content.addView(grid, glp);
-        LinearLayout row1 = new LinearLayout(this);
-        row1.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout row2 = new LinearLayout(this);
-        row2.setOrientation(LinearLayout.HORIZONTAL);
-        LinearLayout.LayoutParams rowLp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        grid.addView(row1, rowLp);
-        LinearLayout.LayoutParams row2Lp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        row2Lp.topMargin = Ui.dpi(this, 7);
-        grid.addView(row2, row2Lp);
-
-        addInfo(row1, IconView.CALENDAR, "每日时间",
-                day.rest ? day.minutes() + " 分钟" : Math.max(1, day.minutes()) + " 分钟");
-        addInfo(row1, IconView.CHART, "难度",
-                Store.hasProfile(this) ? profile.levelLabel() : "新手");
-        addInfo(row2, IconView.TARGET, "重点部位",
-                day.rest ? "全身放松" : shortFocus(day.focus));
-        addInfo(row2, IconView.CHECK, "器械",
-                Store.hasProfile(this) ? shortGear(profile.gearSummary()) : "徒手");
+        mlp.topMargin = Ui.dpi(this, 6);
+        mlp.rightMargin = Ui.dpi(this, 10);
+        content.addView(meta, mlp);
 
         View spacer = new View(this);
         content.addView(spacer, new LinearLayout.LayoutParams(
@@ -429,17 +414,17 @@ public class MainActivity extends Activity {
         LinearLayout cta = new LinearLayout(this);
         cta.setOrientation(LinearLayout.HORIZONTAL);
         cta.setGravity(Gravity.CENTER_VERTICAL);
-        cta.setBackground(Ui.round(this, Ui.SURFACE, 21f));
+        cta.setBackground(Ui.ripple(this, Ui.round(this, Ui.SURFACE, 21f), 0x22000000));
         cta.setPadding(Ui.dpi(this, 16), 0, Ui.dpi(this, 6), 0);
         LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 42));
-        clp.topMargin = Ui.dpi(this, 8);
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 38));
         content.addView(cta, clp);
 
         TextView go = new TextView(this);
         go.setText(day.rest ? "开始拉伸" : "开始训练");
         go.setTextColor(Ui.ACCENT);
         go.setTextSize(14);
+        go.setIncludeFontPadding(false);
         go.setGravity(Gravity.CENTER);
         Ui.font(go, 700);
         cta.addView(go, new LinearLayout.LayoutParams(0,
@@ -447,74 +432,43 @@ public class MainActivity extends Activity {
 
         FrameLayout arrow = new FrameLayout(this);
         arrow.setBackground(Ui.round(this, Ui.ACCENT, 15f));
-        cta.addView(arrow, new LinearLayout.LayoutParams(Ui.dpi(this, 30), Ui.dpi(this, 30)));
+        cta.addView(arrow, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 30), Ui.dpi(this, 30)));
         IconView arrowIcon = new IconView(this);
         arrowIcon.setIcon(IconView.ARROW);
         arrowIcon.setColor(Color.WHITE);
-        arrowIcon.setStrokeDp(2.2f);
         arrow.addView(arrowIcon, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 15), Ui.dpi(this, 15), Gravity.CENTER));
 
         cta.setOnClickListener(v -> startWorkout(dayIndex));
 
         PhotoView photo = new PhotoView(this);
-        photo.setRadiusDp(38f);
+        photo.setRadiusDp(28f);
         photo.setAnimated(false);
-        photo.setOutline(0x55FFFFFF, 1.5f);
+        photo.setOutline(0x66FFFFFF, 2f);
         if (!day.exercises.isEmpty()) {
             photo.bind(day.exercises.get(0));
         }
         FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams(
-                Ui.dpi(this, 76), Ui.dpi(this, 76));
+                Ui.dpi(this, 56), Ui.dpi(this, 56));
         plp.gravity = Gravity.RIGHT | Gravity.TOP;
         plp.topMargin = Ui.dpi(this, 12);
-        plp.rightMargin = Ui.dpi(this, 14);
+        plp.rightMargin = Ui.dpi(this, 12);
         card.addView(photo, plp);
         photo.setOnClickListener(v -> openDay(dayIndex));
 
         return card;
     }
 
-    private void addInfo(LinearLayout row, int icon, String label, String value) {
-        LinearLayout cell = new LinearLayout(this);
-        cell.setOrientation(LinearLayout.HORIZONTAL);
-        cell.setGravity(Gravity.CENTER_VERTICAL);
-        row.addView(cell, new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-
-        FrameLayout tile = new FrameLayout(this);
-        tile.setBackground(Ui.round(this, 0x2EFFFFFF, 8f));
-        cell.addView(tile, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 26), Ui.dpi(this, 26)));
-        IconView ic = new IconView(this);
-        ic.setIcon(icon);
-        ic.setColor(Color.WHITE);
-        ic.setStrokeDp(2f);
-        tile.addView(ic, new FrameLayout.LayoutParams(
-                Ui.dpi(this, 15), Ui.dpi(this, 15), Gravity.CENTER));
-
-        LinearLayout texts = new LinearLayout(this);
-        texts.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        tlp.leftMargin = Ui.dpi(this, 7);
-        cell.addView(texts, tlp);
-
-        TextView v = new TextView(this);
-        v.setText(value);
-        v.setTextColor(Color.WHITE);
-        v.setTextSize(12.5f);
-        v.setMaxLines(1);
-        v.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        Ui.font(v, 700);
-        texts.addView(v);
-
-        TextView l = new TextView(this);
-        l.setText(label);
-        l.setTextColor(Ui.WHITE_60);
-        l.setTextSize(10);
-        Ui.font(l, 400);
-        texts.addView(l);
+    /** 一行说完这张卡：时长 · 难度 · 重点 · 器械。 */
+    private String metaLine(Data.Day day) {
+        if (day.rest) {
+            return day.minutes() + " 分钟 · 全身放松 · 恢复日";
+        }
+        String level = Store.hasProfile(this) ? profile.levelLabel() : "新手";
+        String gear = Store.hasProfile(this) ? shortGear(profile.gearSummary()) : "徒手";
+        return Math.max(1, day.minutes()) + " 分钟 · " + level + " · "
+                + shortFocus(day.focus) + " · " + gear;
     }
 
     private String shortFocus(String focus) {

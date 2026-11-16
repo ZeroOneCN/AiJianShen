@@ -207,7 +207,6 @@ public class ResultActivity extends Activity {
         IconView trophy = new IconView(this);
         trophy.setIcon(goal ? IconView.TROPHY : IconView.CHECK);
         trophy.setColor(Color.WHITE);
-        trophy.setStrokeDp(2.2f);
         bubble.addView(trophy, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 30), Ui.dpi(this, 30), Gravity.CENTER));
         return card;
@@ -360,7 +359,6 @@ public class ResultActivity extends Activity {
             IconView ic = new IconView(this);
             ic.setIcon(FEEL_ICONS[i]);
             ic.setColor(Ui.INK_SOFT);
-            ic.setStrokeDp(2f);
             cell.addView(ic, new LinearLayout.LayoutParams(
                     Ui.dpi(this, 24), Ui.dpi(this, 24)));
             TextView t = new TextView(this);

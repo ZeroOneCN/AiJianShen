@@ -129,7 +129,6 @@ public final class Nav {
             IconView icon = new IconView(a);
             icon.setIcon(ICONS[i]);
             icon.setColor(on ? Ui.ACCENT : Ui.INK_SOFT);
-            icon.setStrokeDp(on ? 2.2f : 2f);
             item.addView(icon, new LinearLayout.LayoutParams(
                     Ui.dpi(a, 24), Ui.dpi(a, 24)));
 

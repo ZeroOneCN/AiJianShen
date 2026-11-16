@@ -38,18 +38,21 @@ public class SettingsActivity extends Activity {
         IconView user = findViewById(R.id.icon_user);
         user.setIcon(IconView.USER);
         user.setColor(Ui.ACCENT);
-        user.setStrokeDp(2f);
 
         TextView name = findViewById(R.id.tv_name);
         Ui.font(name, 800);
         TextView sub = findViewById(R.id.tv_sub);
         Ui.font(sub, 400);
 
-        IconView sync = findViewById(R.id.btn_sync);
-        sync.setIcon(IconView.REFRESH);
-        sync.setColor(Ui.ACCENT);
-        sync.setOnClickListener(v -> Toast.makeText(this,
-                "本地模式：所有记录只保存在这台设备上", Toast.LENGTH_SHORT).show());
+        // 顶栏的同步入口：40dp 触控区 + 圆形底 + ripple，点开手机间同步页
+        FrameLayout syncBtn = findViewById(R.id.btn_sync);
+        syncBtn.setBackground(Ui.ripple(this,
+                Ui.round(this, 0xFFF1F3F6, 20f), 0x1A000000));
+        IconView syncIcon = findViewById(R.id.icon_sync);
+        syncIcon.setIcon(IconView.REFRESH);
+        syncIcon.setColor(Ui.INK_MUTED);
+        syncBtn.setOnClickListener(v ->
+                startActivity(new Intent(this, SyncActivity.class)));
 
         ((FrameLayout) findViewById(R.id.nav_holder)).addView(
                 Nav.bar(this, Nav.TAB_SETTINGS),
@@ -115,17 +118,143 @@ public class SettingsActivity extends Activity {
         addRow(more, IconView.SHARE, Ui.SLATE, "分享给朋友", null, false,
                 v -> share());
         addRow(more, IconView.STAR, Ui.SLATE, "关于爱健身", "版本与说明", true,
-                v -> info("关于爱健身",
-                        "爱健身 " + versionName() + "\n\n训练记录、体重与计划条件只保存在本机，不需要账号，也不上传。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+                v -> aboutDialog());
+    }
+
+    /**
+     * 关于弹窗：图标 + 名称 + 版本做头部，下面三条用图标起头，最后才是按钮。
+     * 不再把几段话堆进一个 TextView——那样读起来像免责声明。
+     */
+    private void aboutDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(Ui.round(this, Ui.SURFACE, 26f));
+        int p = Ui.dpi(this, 24);
+        root.setPadding(p, p, p, Ui.dpi(this, 20));
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+
+        FrameLayout badge = new FrameLayout(this);
+        badge.setBackground(Ui.round(this, Ui.ACCENT, 16f));
+        head.addView(badge, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 52), Ui.dpi(this, 52)));
+        IconView logo = new IconView(this);
+        logo.setIcon(IconView.DUMBBELL);
+        logo.setColor(Color.WHITE);
+        badge.addView(logo, new FrameLayout.LayoutParams(
+                Ui.dpi(this, 26), Ui.dpi(this, 26), Gravity.CENTER));
+
+        LinearLayout names = new LinearLayout(this);
+        names.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        nlp.leftMargin = Ui.dpi(this, 14);
+        head.addView(names, nlp);
+
+        TextView app = new TextView(this);
+        app.setText("爱健身");
+        app.setTextColor(Ui.INK);
+        app.setTextSize(19);
+        Ui.font(app, 800);
+        names.addView(app);
+
+        TextView ver = new TextView(this);
+        ver.setText(versionName() + " · 本地训练版");
+        ver.setTextColor(Ui.INK_SOFT);
+        ver.setTextSize(12);
+        ver.setPadding(0, Ui.dpi(this, 3), 0, 0);
+        Ui.font(ver, 400);
+        names.addView(ver);
+
+        root.addView(head, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        View divider = new View(this);
+        divider.setBackgroundColor(0xFFEFEFF2);
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, Ui.dpi(this, 1)));
+        dlp.topMargin = Ui.dpi(this, 18);
+        root.addView(divider, dlp);
+
+        LinearLayout facts = new LinearLayout(this);
+        facts.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams flp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        flp.topMargin = Ui.dpi(this, 16);
+        root.addView(facts, flp);
+
+        aboutRow(facts, IconView.SHIELD, "训练与体重只存在本机");
+        aboutRow(facts, IconView.WIFI, "不联网，同步走局域网");
+        aboutRow(facts, IconView.SHARE, "随时可导出备份带走");
+
+        TextView ok = new TextView(this);
+        ok.setText("知道了");
+        ok.setTextColor(Color.WHITE);
+        ok.setTextSize(15);
+        ok.setGravity(Gravity.CENTER);
+        ok.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, 23f), 0x33FFFFFF));
+        Ui.font(ok, 700);
+        LinearLayout.LayoutParams olp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 46));
+        olp.topMargin = Ui.dpi(this, 20);
+        root.addView(ok, olp);
+        ok.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.setContentView(root);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp = w.getAttributes();
+            lp.dimAmount = 0.45f;
+            w.setAttributes(lp);
+        }
+        dialog.show();
+        if (w != null) {
+            w.setLayout(getResources().getDisplayMetrics().widthPixels - Ui.dpi(this, 48),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
+    private void aboutRow(LinearLayout parent, int icon, String text) {
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        rlp.bottomMargin = Ui.dpi(this, 11);
+        parent.addView(row, rlp);
+
+        IconView ic = new IconView(this);
+        ic.setIcon(icon);
+        ic.setColor(Ui.ACCENT);
+        row.addView(ic, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 17), Ui.dpi(this, 17)));
+
+        TextView tv = new TextView(this);
+        tv.setText(text);
+        tv.setTextColor(Ui.INK_MUTED);
+        tv.setTextSize(13);
+        tv.setLineSpacing(Ui.dp(this, 2), 1f);
+        Ui.font(tv, 400);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        tlp.leftMargin = Ui.dpi(this, 10);
+        row.addView(tv, tlp);
     }
 
     /** 版本号从安装包读取，避免和 build.gradle 里写的版本对不上。 */
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.8.3" : v;
+            return v == null || v.isEmpty() ? "1.9.1" : v;
         } catch (Exception e) {
-            return "1.8.3";
+            return "1.9.1";
         }
     }
 
@@ -158,7 +287,6 @@ public class SettingsActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(Ui.SURFACE);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 22), Ui.dpi(this, 22), Gravity.CENTER));
 

@@ -236,7 +236,6 @@ public class WorkoutActivity extends Activity {
         toggle.setBackground(Ui.ripple(this, Ui.gradientBluePill(this), 0x33FFFFFF));
         iconToggle.setIcon(IconView.PAUSE);
         iconToggle.setColor(Color.WHITE);
-        iconToggle.setStrokeDp(2.2f);
 
         profile = Store.profile(this);
         prefs = Store.WorkoutPrefs.load(this);
@@ -334,7 +333,6 @@ public class WorkoutActivity extends Activity {
         IconView ic = view.findViewById(iconId);
         ic.setIcon(icon);
         ic.setColor(color);
-        ic.setStrokeDp(2f);
     }
 
     private void buildSteps(String single) {

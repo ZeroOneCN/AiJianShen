@@ -84,7 +84,6 @@ public final class ReplaceSheet {
         IconView icon = new IconView(a);
         icon.setIcon(IconView.SEARCH);
         icon.setColor(Ui.INK_SOFT);
-        icon.setStrokeDp(2f);
         search.addView(icon, new LinearLayout.LayoutParams(Ui.dpi(a, 18), Ui.dpi(a, 18)));
         EditText et = new EditText(a);
         et.setHint("搜索动作或部位");
@@ -277,7 +276,6 @@ public final class ReplaceSheet {
                 IconView plus = new IconView(a);
                 plus.setIcon(IconView.PLUS);
                 plus.setColor(Ui.ACCENT);
-                plus.setStrokeDp(2f);
                 pick.addView(plus, new FrameLayout.LayoutParams(
                         Ui.dpi(a, 15), Ui.dpi(a, 15), Gravity.CENTER));
             }

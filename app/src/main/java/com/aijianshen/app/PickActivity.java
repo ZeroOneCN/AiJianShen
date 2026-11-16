@@ -77,7 +77,6 @@ public class PickActivity extends Activity {
         IconView icon = new IconView(this);
         icon.setIcon(IconView.SEARCH);
         icon.setColor(Ui.INK_SOFT);
-        icon.setStrokeDp(1.8f);
         searchBar.addView(icon, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 18), Ui.dpi(this, 18)));
 

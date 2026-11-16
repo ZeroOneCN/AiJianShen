@@ -113,7 +113,6 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
         IconView icon = new IconView(this);
         icon.setIcon(IconView.SCALE);
         icon.setColor(Ui.ACCENT);
-        icon.setStrokeDp(1.8f);
         head.addView(icon, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 26), Ui.dpi(this, 26)));
 
@@ -185,7 +184,6 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
             IconView icon = new IconView(this);
             icon.setIcon(IconView.SCALE);
             icon.setColor(0xFFC7CBD1);
-            icon.setStrokeDp(1.6f);
             empty.addView(icon, new LinearLayout.LayoutParams(
                     Ui.dpi(this, 34), Ui.dpi(this, 34)));
 

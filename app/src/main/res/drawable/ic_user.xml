@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 线性图标，24 视口 / 2 单位描边 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12 4.6A3.6 3.6 0 1 1 12 11.8A3.6 3.6 0 1 1 12 4.6Z"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+    <path
+        android:pathData="M4.9 20.4C5.8 16.2 8.4 14.2 12 14.2C15.6 14.2 18.2 16.2 19.1 20.4"
+        android:strokeColor="#FF1C212C"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="2" />
+</vector>

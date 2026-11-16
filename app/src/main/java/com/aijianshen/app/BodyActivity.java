@@ -155,7 +155,6 @@ public class BodyActivity extends Activity {
         IconView scale = new IconView(this);
         scale.setIcon(IconView.SCALE);
         scale.setColor(Ui.ACCENT);
-        scale.setStrokeDp(1.8f);
         head.addView(scale, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 26), Ui.dpi(this, 26)));
 

@@ -77,10 +77,20 @@
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <com.aijianshen.app.IconView
+                <FrameLayout
                     android:id="@+id/btn_sync"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp" />
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginLeft="4dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <com.aijianshen.app.IconView
+                        android:id="@+id/icon_sync"
+                        android:layout_width="21dp"
+                        android:layout_height="21dp"
+                        android:layout_gravity="center" />
+                </FrameLayout>
             </LinearLayout>
 
             <TextView

@@ -124,7 +124,6 @@ public class AchievementsActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(IconView.TROPHY);
         ic.setColor(Color.WHITE);
-        ic.setStrokeDp(2f);
         medal.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 40), Ui.dpi(this, 40), Gravity.CENTER));
         return card;
@@ -149,7 +148,6 @@ public class AchievementsActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(b.icon);
         ic.setColor(on ? Color.WHITE : 0xFFB4BAC4);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 21), Ui.dpi(this, 21), Gravity.CENTER));
 

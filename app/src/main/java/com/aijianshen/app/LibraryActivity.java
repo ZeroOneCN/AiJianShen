@@ -310,7 +310,6 @@ public class LibraryActivity extends Activity {
             IconView ic = new IconView(this);
             ic.setIcon(IconView.TROPHY);
             ic.setColor(Ui.GREEN);
-            ic.setStrokeDp(2f);
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
                     Ui.dpi(this, 20), Ui.dpi(this, 20));
             ilp.rightMargin = Ui.dpi(this, 8);
@@ -376,7 +375,6 @@ public class LibraryActivity extends Activity {
         favBtn.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 25f), 0x22000000));
         IconView favIcon = new IconView(this);
         favIcon.setIcon(IconView.STAR);
-        favIcon.setStrokeDp(2f);
         favBtn.addView(favIcon, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 22), Ui.dpi(this, 22), Gravity.CENTER));
         LinearLayout.LayoutParams favLp = new LinearLayout.LayoutParams(

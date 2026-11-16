@@ -544,7 +544,6 @@ public class ReportActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(Ui.ACCENT);
-        ic.setStrokeDp(2f);
         box.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 22), Ui.dpi(this, 22), Gravity.CENTER));
 

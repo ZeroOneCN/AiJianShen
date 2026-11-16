@@ -3,6 +3,7 @@ package com.aijianshen.app;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -11,6 +12,8 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -202,12 +205,12 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         row.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        rlp.topMargin = Ui.dpi(this, 26);
+        rlp.topMargin = Ui.dpi(this, 42);
         body.addView(row, rlp);
 
-        row.addView(genderCard(GenderArt.MALE, "男", Boolean.TRUE.equals(male)),
+        row.addView(genderCard(true, "男", Boolean.TRUE.equals(male)),
                 cardLp(true));
-        row.addView(genderCard(GenderArt.FEMALE, "女", Boolean.FALSE.equals(male)),
+        row.addView(genderCard(false, "女", Boolean.FALSE.equals(male)),
                 cardLp(false));
     }
 
@@ -222,12 +225,18 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         return lp;
     }
 
-    private LinearLayout genderCard(int kind, String name, boolean on) {
+    /**
+     * 性别卡：圆形色底里放性别符号，选中时整块变蓝、符号反白。
+     *
+     * <p>符号是 res/drawable/ic_gender_male|female.xml（SVG 路径），不再画人体剪影——
+     * 小尺寸下剪影的比例怎么调都容易失真，符号一眼就能认出。
+     */
+    private LinearLayout genderCard(boolean isMale, String name, boolean on) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER);
-        card.setPadding(Ui.dpi(this, 8), Ui.dpi(this, 20),
-                Ui.dpi(this, 8), Ui.dpi(this, 16));
+        card.setPadding(Ui.dpi(this, 8), Ui.dpi(this, 28),
+                Ui.dpi(this, 8), Ui.dpi(this, 24));
 
         GradientDrawable shape = Ui.round(this, on ? Ui.ACCENT_SOFT : Ui.SURFACE, Ui.R_CARD);
         if (on) {
@@ -235,18 +244,24 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         }
         card.setBackground(Ui.ripple(this, shape, 0x22000000));
 
-        GenderArt art = new GenderArt(this);
-        art.setKind(kind);
-        art.setColor(on ? Ui.ACCENT : 0xFFC3C8D2);
-        card.addView(art, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 92), Ui.dpi(this, 142)));
+        FrameLayout disc = new FrameLayout(this);
+        // 76dp 的方块配 38dp 圆角，正好是一个圆
+        disc.setBackground(Ui.round(this, on ? Ui.ACCENT : 0xFFF1F3F6, 38f));
+        card.addView(disc, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 76), Ui.dpi(this, 76)));
+
+        ImageView symbol = new ImageView(this);
+        symbol.setImageResource(isMale ? R.drawable.ic_gender_male : R.drawable.ic_gender_female);
+        symbol.setColorFilter(on ? Color.WHITE : 0xFF98A1AE);
+        disc.addView(symbol, new FrameLayout.LayoutParams(
+                Ui.dpi(this, 38), Ui.dpi(this, 38), Gravity.CENTER));
 
         TextView label = new TextView(this);
         label.setText(name);
         label.setTextColor(on ? Ui.ACCENT : Ui.INK);
         label.setTextSize(15);
         label.setGravity(Gravity.CENTER);
-        label.setPadding(0, Ui.dpi(this, 12), 0, 0);
+        label.setPadding(0, Ui.dpi(this, 14), 0, 0);
         Ui.font(label, 700);
         // 必须显式给 MATCH_PARENT：不给 LayoutParams 时父容器的 gravity 落不到
         // 文字上，字会贴在卡片左下角
@@ -254,7 +269,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         card.setOnClickListener(v -> {
-            male = kind == GenderArt.MALE;
+            male = isMale;
             Store.setMale(this, male);
             renderStep();
             handler.postDelayed(this::next, 170);
@@ -410,7 +425,6 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         IconView iv = new IconView(this);
         iv.setIcon(on ? IconView.CHECK : icon);
         iv.setColor(on ? Ui.ACCENT : Ui.INK_SOFT);
-        iv.setStrokeDp(1.8f);
         card.addView(iv, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 24), Ui.dpi(this, 24)));
 

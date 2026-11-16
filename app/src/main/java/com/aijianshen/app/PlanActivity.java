@@ -317,7 +317,6 @@ public class PlanActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(color);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 21), Ui.dpi(this, 21), Gravity.CENTER));
 
@@ -353,7 +352,6 @@ public class PlanActivity extends Activity {
             IconView tick = new IconView(this);
             tick.setIcon(IconView.CHECK);
             tick.setColor(Color.WHITE);
-            tick.setStrokeDp(2.4f);
             check.addView(tick, new FrameLayout.LayoutParams(
                     Ui.dpi(this, 13), Ui.dpi(this, 13), Gravity.CENTER));
         }
@@ -379,7 +377,6 @@ public class PlanActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(color);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 18), Ui.dpi(this, 18), Gravity.CENTER));
 
@@ -416,7 +413,6 @@ public class PlanActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(color);
-        ic.setStrokeDp(2f);
         tile.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 28), Ui.dpi(this, 28), Gravity.CENTER));
 
@@ -560,7 +556,6 @@ public class PlanActivity extends Activity {
         IconView ic = new IconView(this);
         ic.setIcon(IconView.TROPHY);
         ic.setColor(Ui.ACCENT);
-        ic.setStrokeDp(2f);
         badge.addView(ic, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 36), Ui.dpi(this, 36), Gravity.CENTER));
 

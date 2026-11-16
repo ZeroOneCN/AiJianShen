@@ -200,7 +200,6 @@ public class DayDetailActivity extends Activity {
         IconView chevron = new IconView(this);
         chevron.setIcon(IconView.CHEVRON);
         chevron.setColor(0xFFC9CDD4);
-        chevron.setStrokeDp(2f);
         row.addView(chevron, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 18), Ui.dpi(this, 18)));
 
