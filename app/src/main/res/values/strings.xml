@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">爱健身</string>
     <string name="hello">爱健身</string>
+    <string name="widget_desc">连续训练天数与本周进度，点一下进入首页</string>
+    <string name="widget_label">今日进度</string>
 </resources>

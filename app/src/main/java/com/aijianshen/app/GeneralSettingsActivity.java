@@ -103,11 +103,7 @@ public class GeneralSettingsActivity extends Activity {
     }
 
     private String reminderText() {
-        Store.Reminder r = Store.reminder(this);
-        if (!r.on) {
-            return "未开启";
-        }
-        return r.timeText() + " · " + r.daysText();
+        return Store.reminderSummary(this);
     }
 
     private void chooseWeightUnit() {

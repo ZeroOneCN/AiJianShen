@@ -35,6 +35,8 @@ public final class Store {
     private static final String K_HEIGHT_UNIT = "height_unit";
     private static final String K_SESSIONS = "sessions";
     private static final String K_REMINDER = "reminder";
+    private static final String K_REMINDERS = "reminders";
+    private static final String K_CHALLENGE = "challenge";
     private static final String K_OVERRIDES = "overrides";
     private static final String K_BODY = "body_records";
     private static final String K_AGE = "age";
@@ -1314,33 +1316,22 @@ public final class Store {
 
     // ---- 训练提醒 ----
 
+    /** 一条提醒：时间 + 重复星期。可以存多条（比如早一次、晚一次）。 */
     public static class Reminder {
-        public boolean on = false;
+        public String id = "";
+        public boolean on = true;
         public int hour = 20;
         public int minute = 0;
         public boolean[] days = {true, true, true, true, true, true, true};
 
-        public static Reminder load(Context c) {
-            Reminder r = new Reminder();
-            try {
-                JSONObject o = new JSONObject(sp(c).getString(K_REMINDER, "{}"));
-                r.on = o.optBoolean("on", false);
-                r.hour = Math.max(0, Math.min(23, o.optInt("h", 20)));
-                r.minute = Math.max(0, Math.min(59, o.optInt("m", 0)));
-                JSONArray arr = o.optJSONArray("days");
-                if (arr != null && arr.length() == 7) {
-                    for (int i = 0; i < 7; i++) {
-                        r.days[i] = arr.optBoolean(i, true);
-                    }
-                }
-            } catch (Exception ignored) {
-            }
-            return r;
+        public Reminder() {
+            id = "r" + System.currentTimeMillis() + (int) (Math.random() * 900 + 100);
         }
 
-        public void save(Context c) {
+        JSONObject toJson() {
             JSONObject o = new JSONObject();
             try {
+                o.put("id", id);
                 o.put("on", on);
                 o.put("h", hour);
                 o.put("m", minute);
@@ -1351,21 +1342,41 @@ public final class Store {
                 o.put("days", arr);
             } catch (Exception ignored) {
             }
-            sp(c).edit().putString(K_REMINDER, o.toString()).apply();
+            return o;
+        }
+
+        static Reminder fromJson(JSONObject o) {
+            Reminder r = new Reminder();
+            r.id = o.optString("id", r.id);
+            r.on = o.optBoolean("on", true);
+            r.hour = Math.max(0, Math.min(23, o.optInt("h", 20)));
+            r.minute = Math.max(0, Math.min(59, o.optInt("m", 0)));
+            JSONArray arr = o.optJSONArray("days");
+            if (arr != null && arr.length() == 7) {
+                for (int i = 0; i < 7; i++) {
+                    r.days[i] = arr.optBoolean(i, true);
+                }
+            }
+            return r;
         }
 
         public String timeText() {
             return String.format(Locale.CHINA, "%02d:%02d", hour, minute);
         }
 
-        public String daysText() {
-            String[] labels = {"一", "二", "三", "四", "五", "六", "日"};
+        public int dayCount() {
             int n = 0;
             for (boolean b : days) {
                 if (b) {
                     n++;
                 }
             }
+            return n;
+        }
+
+        public String daysText() {
+            String[] labels = {"一", "二", "三", "四", "五", "六", "日"};
+            int n = dayCount();
             if (n == 7) {
                 return "每天";
             }
@@ -1383,13 +1394,180 @@ public final class Store {
             }
             return sb.toString();
         }
+
+        public String summary() {
+            return timeText() + " · " + daysText();
+        }
     }
 
+    public static List<Reminder> reminders(Context c) {
+        List<Reminder> out = new ArrayList<>();
+        String raw = sp(c).getString(K_REMINDERS, null);
+        if (raw != null) {
+            try {
+                JSONArray arr = new JSONArray(raw);
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.optJSONObject(i);
+                    if (o != null) {
+                        out.add(Reminder.fromJson(o));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            return out;
+        }
+        // 旧版本只存了一条，读出来迁移成列表，别让用户已经设好的提醒消失
+        String old = sp(c).getString(K_REMINDER, null);
+        if (old != null && old.length() > 2) {
+            try {
+                out.add(Reminder.fromJson(new JSONObject(old)));
+                saveReminders(c, out);
+            } catch (Exception ignored) {
+            }
+        }
+        return out;
+    }
+
+    public static void saveReminders(Context c, List<Reminder> list) {
+        JSONArray arr = new JSONArray();
+        for (Reminder r : list) {
+            arr.put(r.toJson());
+        }
+        sp(c).edit().putString(K_REMINDERS, arr.toString()).apply();
+    }
+
+    /** 按 id 覆盖，没有就追加。 */
+    public static void upsertReminder(Context c, Reminder r) {
+        List<Reminder> list = reminders(c);
+        boolean replaced = false;
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i).id.equals(r.id)) {
+                list.set(i, r);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            list.add(r);
+        }
+        saveReminders(c, list);
+    }
+
+    public static void deleteReminder(Context c, String id) {
+        List<Reminder> list = reminders(c);
+        for (int i = list.size() - 1; i >= 0; i--) {
+            if (list.get(i).id.equals(id)) {
+                list.remove(i);
+            }
+        }
+        saveReminders(c, list);
+    }
+
+    public static Reminder reminderById(Context c, String id) {
+        for (Reminder r : reminders(c)) {
+            if (r.id.equals(id)) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    /** 兼容旧调用：返回第一条，没有就给个默认值。 */
     public static Reminder reminder(Context c) {
-        return Reminder.load(c);
+        List<Reminder> list = reminders(c);
+        return list.isEmpty() ? new Reminder() : list.get(0);
     }
 
-    public static void saveReminder(Context c, Reminder r) {
-        r.save(c);
+    /** 给设置页一句话摘要：没开、只开一条、开了多条。 */
+    public static String reminderSummary(Context c) {
+        List<Reminder> list = reminders(c);
+        int on = 0;
+        Reminder earliest = null;
+        for (Reminder r : list) {
+            if (r.on) {
+                on++;
+                if (earliest == null || r.hour * 60 + r.minute
+                        < earliest.hour * 60 + earliest.minute) {
+                    earliest = r;
+                }
+            }
+        }
+        if (on == 0) {
+            return "未开启";
+        }
+        if (on == 1) {
+            return earliest.timeText() + " · " + earliest.daysText();
+        }
+        return "已开启 " + on + " 条 · 最早 " + earliest.timeText();
+    }
+
+    public static boolean anyReminderOn(Context c) {
+        for (Reminder r : reminders(c)) {
+            if (r.on) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---- 挑战 ----
+
+    /** 已加入的挑战：id + 开始日期。同一时间只做一个。 */
+    public static class ChallengeState {
+        public String id = "";
+        public long start = 0L;
+
+        public boolean active() {
+            return id != null && !id.isEmpty() && start > 0;
+        }
+    }
+
+    public static ChallengeState challengeState(Context c) {
+        ChallengeState s = new ChallengeState();
+        try {
+            JSONObject o = new JSONObject(sp(c).getString(K_CHALLENGE, "{}"));
+            s.id = o.optString("id", "");
+            s.start = o.optLong("start", 0L);
+        } catch (Exception ignored) {
+        }
+        return s;
+    }
+
+    public static void startChallenge(Context c, String id, long start) {
+        JSONObject o = new JSONObject();
+        try {
+            o.put("id", id);
+            o.put("start", start);
+        } catch (Exception ignored) {
+        }
+        sp(c).edit().putString(K_CHALLENGE, o.toString()).apply();
+    }
+
+    public static void quitChallenge(Context c) {
+        sp(c).edit().remove(K_CHALLENGE).apply();
+    }
+
+    // ---- 难度自适应 ----
+
+    /** 练完觉得太轻松或太吃力时，把难度档位往对应方向挪一格，返回实际变化量。 */
+    public static int nudgeLevel(Context c, int delta) {
+        if (delta == 0) {
+            return 0;
+        }
+        PlanProfile p = profile(c);
+        return setLevel(c, p.level + delta);
+    }
+
+    /** 把难度直接设到某一档，返回相对当前档的变化量。越界的部分会被夹住。 */
+    public static int setLevel(Context c, int level) {
+        PlanProfile p = profile(c);
+        int before = p.level;
+        int after = Math.max(0, Math.min(PlanProfile.LEVELS.length - 1, level));
+        if (after == before) {
+            return 0;
+        }
+        p.level = after;
+        saveProfile(c, p);
+        return after - before;
     }
 }

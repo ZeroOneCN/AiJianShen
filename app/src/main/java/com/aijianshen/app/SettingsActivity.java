@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -81,6 +82,9 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.RACK, Ui.PURPLE, "我的训练",
                 "自己挑动作存成模板，随时一键开练", false,
                 v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        addRow(main, IconView.FLAME, Ui.ORANGE, "挑战",
+                "7 天热身、21 天习惯……按周结算，自动算进度", false,
+                v -> startActivity(new Intent(this, ChallengeActivity.class)));
         addRow(main, IconView.TROPHY, Ui.GREEN, "成就",
                 "已点亮 " + Achievements.earned(this) + " 枚徽章", false,
                 v -> startActivity(new Intent(this, AchievementsActivity.class)));
@@ -139,15 +143,11 @@ public class SettingsActivity extends Activity {
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
 
-        FrameLayout badge = new FrameLayout(this);
-        badge.setBackground(Ui.round(this, Ui.ACCENT, 16f));
-        head.addView(badge, new LinearLayout.LayoutParams(
+        // 直接用应用图标，和桌面上看到的是同一个
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.mipmap.ic_launcher);
+        head.addView(logo, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 52), Ui.dpi(this, 52)));
-        IconView logo = new IconView(this);
-        logo.setIcon(IconView.DUMBBELL);
-        logo.setColor(Color.WHITE);
-        badge.addView(logo, new FrameLayout.LayoutParams(
-                Ui.dpi(this, 26), Ui.dpi(this, 26), Gravity.CENTER));
 
         LinearLayout names = new LinearLayout(this);
         names.setOrientation(LinearLayout.VERTICAL);
@@ -252,9 +252,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.9.1" : v;
+            return v == null || v.isEmpty() ? "1.9.2" : v;
         } catch (Exception e) {
-            return "1.9.1";
+            return "1.9.2";
         }
     }
 

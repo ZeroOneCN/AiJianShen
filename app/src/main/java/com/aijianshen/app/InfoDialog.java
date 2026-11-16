@@ -19,6 +19,24 @@ public final class InfoDialog {
     }
 
     public static void show(Activity a, String titleText, String message) {
+        show(a, titleText, message, null, null, 0, false);
+    }
+
+    /** 确认弹窗：标题 + 正文 + 取消 / 主操作。 */
+    public static void confirm(Activity a, String titleText, String message,
+                               String primary, int primaryColor, Runnable action) {
+        show(a, titleText, message, primary, "取消", primaryColor, true, action);
+    }
+
+    public static void show(Activity a, String titleText, String message,
+                            String primary, String cancelText, int primaryColor,
+                            boolean withCancel) {
+        show(a, titleText, message, primary, cancelText, primaryColor, withCancel, null);
+    }
+
+    private static void show(Activity a, String titleText, String message,
+                             String primary, String cancelText, int primaryColor,
+                             boolean withCancel, Runnable action) {
         Dialog dialog = new Dialog(a);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         LinearLayout root = new LinearLayout(a);
@@ -49,18 +67,48 @@ public final class InfoDialog {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         root.addView(sc, slp);
 
+        LinearLayout buttons = new LinearLayout(a);
+        buttons.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(a, 48));
+        blp.topMargin = Ui.dpi(a, 20);
+        root.addView(buttons, blp);
+
+        if (withCancel) {
+            TextView cancel = new TextView(a);
+            cancel.setText(cancelText == null ? "取消" : cancelText);
+            cancel.setTextColor(Ui.INK_MUTED);
+            cancel.setTextSize(15);
+            cancel.setGravity(Gravity.CENTER);
+            cancel.setBackground(Ui.ripple(a, Ui.round(a, Ui.CARD_SOFT, 24f), 0x14000000));
+            Ui.font(cancel, 600);
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+            clp.rightMargin = Ui.dpi(a, 10);
+            buttons.addView(cancel, clp);
+            cancel.setOnClickListener(v -> dialog.dismiss());
+        }
+
         TextView ok = new TextView(a);
-        ok.setText("知道了");
+        ok.setText(primary == null ? "知道了" : primary);
         ok.setTextColor(Color.WHITE);
         ok.setTextSize(15);
         ok.setGravity(Gravity.CENTER);
-        ok.setBackground(Ui.ripple(a, Ui.gradientBluePill(a), 0x33FFFFFF));
+        ok.setBackground(Ui.ripple(a, withCancel
+                ? Ui.round(a, primaryColor == 0 ? Ui.ACCENT : primaryColor, 24f)
+                : Ui.gradientBluePill(a), 0x33FFFFFF));
         Ui.font(ok, 700);
-        LinearLayout.LayoutParams olp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(a, 48));
-        olp.topMargin = Ui.dpi(a, 20);
-        root.addView(ok, olp);
-        ok.setOnClickListener(v -> dialog.dismiss());
+        LinearLayout.LayoutParams olp = withCancel
+                ? new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
+                : new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        buttons.addView(ok, olp);
+        ok.setOnClickListener(v -> {
+            if (action != null) {
+                action.run();
+            }
+            dialog.dismiss();
+        });
 
         dialog.setContentView(root);
         Window w = dialog.getWindow();

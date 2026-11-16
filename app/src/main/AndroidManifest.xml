@@ -138,6 +138,16 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".ReminderEditActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".ChallengeActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".AchievementsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />
@@ -155,6 +165,18 @@
         <receiver
             android:name=".ReminderReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name=".StreakWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_streak_info" />
+        </receiver>
 
         <receiver
             android:name=".BootReceiver"

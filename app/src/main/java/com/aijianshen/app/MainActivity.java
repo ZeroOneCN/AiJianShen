@@ -15,6 +15,7 @@ import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -141,7 +142,7 @@ public class MainActivity extends Activity {
         more.setText("更多  ›");
         more.setTextColor(Ui.ACCENT);
         Ui.font(more, 600);
-        more.setOnClickListener(v -> startActivity(new Intent(this, DiscoverActivity.class)));
+        more.setOnClickListener(v -> openChallenges());
 
         challengeRow = findViewById(R.id.challenge_row);
         focusRow = findViewById(R.id.focus_row);
@@ -308,39 +309,24 @@ public class MainActivity extends Activity {
         coach.setClickable(resume);
     }
 
+    /**
+     * 挑战区：正在做的那一个占一张卡，直接显示第几周、本周几次、还剩几天；
+     * 没开始的按目标列出来，一键就能开始。进度全部来自平时的训练记录，不用另外打卡。
+     */
     private void renderChallenges() {
         challengeRow.removeAllViews();
-        int[] order = new int[7];
-        int n = 0;
-        for (int k = 0; k < 7 && n < 7; k++) {
-            int i = (todayIndex + k) % 7;
-            if (!plan.get(i).rest) {
-                order[n++] = i;
+        Store.ChallengeState st = Store.challengeState(this);
+        Challenges.Def active = st.active() ? Challenges.byId(st.id) : null;
+        if (active != null) {
+            challengeRow.addView(
+                    activeChallengeCard(active, Challenges.progress(this, active, st.start)),
+                    challengeLp());
+        }
+        for (Challenges.Def d : Challenges.all()) {
+            if (active != null && d.id.equals(active.id)) {
+                continue;
             }
-        }
-        if (n == 0) {
-            order[n++] = todayIndex;
-        }
-        int added = 0;
-        for (int k = 0; k < n && added < 2; k++) {
-            int idx = order[k];
-            boolean blue = added == 0;
-            challengeRow.addView(challengeCard(plan.get(idx), idx,
-                    blue ? 0xFF0068FF : Ui.GREEN,
-                    blue ? Ui.ACCENT : Ui.GREEN_2,
-                    blue ? "按你的条件" : "换个节奏"), challengeLp());
-            added++;
-        }
-        int rest = -1;
-        for (int i = 0; i < 7; i++) {
-            if (plan.get(i).rest) {
-                rest = i;
-                break;
-            }
-        }
-        if (rest >= 0 && added < 3) {
-            challengeRow.addView(challengeCard(plan.get(rest), rest,
-                    0xFF6B7C8E, 0xFF3F4E5C, "恢复日"), challengeLp());
+            challengeRow.addView(goalChallengeCard(d), challengeLp());
         }
     }
 
@@ -351,12 +337,13 @@ public class MainActivity extends Activity {
         return lp;
     }
 
-    private View challengeCard(Data.Day day, int dayIndex, int start, int end, String badge) {
+    /** 进行中：名字 + 第几周 + 本周几次 + 剩余天数 + 一周一格的进度条。 */
+    private View activeChallengeCard(Challenges.Def d, Challenges.Progress pr) {
         FrameLayout card = new FrameLayout(this);
-        card.setBackground(Ui.gradientCard(this, start, end, Ui.R_HERO));
+        card.setBackground(Ui.gradientCard(this, d.color, shade(d.color, 0.70f), Ui.R_HERO));
         card.setClipToOutline(true);
         card.setClickable(true);
-        card.setOnClickListener(v -> openDay(dayIndex));
+        card.setOnClickListener(v -> openChallenges());
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
@@ -365,21 +352,21 @@ public class MainActivity extends Activity {
         card.addView(content, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-        TextView badgeView = new TextView(this);
-        badgeView.setText(badge);
-        badgeView.setTextColor(Ui.CREAM_INK);
-        badgeView.setTextSize(11);
-        badgeView.setGravity(Gravity.CENTER);
-        badgeView.setPadding(Ui.dpi(this, 9), Ui.dpi(this, 2),
-                Ui.dpi(this, 9), Ui.dpi(this, 2));
-        badgeView.setBackground(Ui.round(this, Ui.CREAM, 10f));
-        Ui.font(badgeView, 600);
-        content.addView(badgeView, new LinearLayout.LayoutParams(
+        boolean again = pr.done || pr.daysLeft == 0;
+        TextView badge = new TextView(this);
+        badge.setText(pr.done ? "已通关" : (again ? "已结束" : "进行中"));
+        badge.setTextColor(Ui.CREAM_INK);
+        badge.setTextSize(11);
+        badge.setIncludeFontPadding(false);
+        badge.setGravity(Gravity.CENTER);
+        badge.setPadding(Ui.dpi(this, 9), 0, Ui.dpi(this, 9), 0);
+        badge.setBackground(Ui.round(this, Ui.CREAM, 10f));
+        Ui.font(badge, 700);
+        content.addView(badge, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 20)));
 
-        // 标题让出右上角缩略图的位置，避免文字压到图上
         TextView title = new TextView(this);
-        title.setText(day.rest ? "恢复与拉伸" : day.title);
+        title.setText(d.name);
         title.setTextColor(Color.WHITE);
         title.setTextSize(21);
         title.setIncludeFontPadding(false);
@@ -388,14 +375,13 @@ public class MainActivity extends Activity {
         Ui.font(title, 800);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        tlp.topMargin = Ui.dpi(this, 9);
-        tlp.rightMargin = Ui.dpi(this, 78);
+        tlp.topMargin = Ui.dpi(this, 8);
+        tlp.rightMargin = Ui.dpi(this, 62);
         content.addView(title, tlp);
 
-        // 一行说完时长 / 难度 / 重点 / 器械，比四格标签网格干净，也省下 60dp 高度
         TextView meta = new TextView(this);
-        meta.setText(metaLine(day));
-        meta.setTextColor(0xE0FFFFFF);
+        meta.setText(progressLine(d, pr));
+        meta.setTextColor(0xE6FFFFFF);
         meta.setTextSize(11.5f);
         meta.setIncludeFontPadding(false);
         meta.setMaxLines(1);
@@ -403,26 +389,122 @@ public class MainActivity extends Activity {
         Ui.font(meta, 500);
         LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        mlp.topMargin = Ui.dpi(this, 6);
-        mlp.rightMargin = Ui.dpi(this, 10);
+        mlp.topMargin = Ui.dpi(this, 5);
+        mlp.rightMargin = Ui.dpi(this, 6);
         content.addView(meta, mlp);
+
+        // 一周一格，够次数就点亮
+        LinearLayout bars = new LinearLayout(this);
+        bars.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 6));
+        blp.topMargin = Ui.dpi(this, 11);
+        content.addView(bars, blp);
+        for (int i = 0; i < d.weeks; i++) {
+            View cell = new View(this);
+            cell.setBackground(Ui.round(this,
+                    i < pr.weeksDone ? 0xFFFFFFFF : 0x42FFFFFF, 3f));
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+            if (i > 0) {
+                clp.leftMargin = Ui.dpi(this, 5);
+            }
+            bars.addView(cell, clp);
+        }
 
         View spacer = new View(this);
         content.addView(spacer, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
+        Runnable action = again ? this::restartChallenge : () -> practice(todayIndex);
+        content.addView(again
+                        ? ctaBar("再来一次", 0x33FFFFFF, Color.WHITE,
+                        0x3DFFFFFF, Color.WHITE, action)
+                        : ctaBar("练一次", 0xFFFFFFFF, Ui.INK,
+                        Ui.ACCENT_SOFT, Ui.ACCENT, action),
+                ctaLp());
+        card.addView(tile(d, 48, 0x33FFFFFF), tileLp());
+        return card;
+    }
+
+    /** 还没开始的挑战：目标规格 + 一句话说明 + 开始。 */
+    private View goalChallengeCard(Challenges.Def d) {
+        FrameLayout card = new FrameLayout(this);
+        card.setBackground(Ui.roundStroke(this, Ui.SURFACE, Ui.R_HERO, Ui.LINE));
+        card.setClipToOutline(true);
+        card.setClickable(true);
+        card.setOnClickListener(v -> openChallenges());
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int p = Ui.dpi(this, 13);
+        content.setPadding(p, p, p, p);
+        card.addView(content, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        TextView badge = new TextView(this);
+        badge.setText(d.spec());
+        badge.setTextColor(d.color);
+        badge.setTextSize(11);
+        badge.setIncludeFontPadding(false);
+        badge.setGravity(Gravity.CENTER);
+        badge.setPadding(Ui.dpi(this, 9), 0, Ui.dpi(this, 9), 0);
+        badge.setBackground(Ui.round(this, Ui.withAlpha(d.color, 0.12f), 10f));
+        Ui.font(badge, 700);
+        content.addView(badge, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 20)));
+
+        TextView title = new TextView(this);
+        title.setText(d.name);
+        title.setTextColor(Ui.INK);
+        title.setTextSize(21);
+        title.setIncludeFontPadding(false);
+        title.setMaxLines(1);
+        title.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        Ui.font(title, 800);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.topMargin = Ui.dpi(this, 8);
+        tlp.rightMargin = Ui.dpi(this, 62);
+        content.addView(title, tlp);
+
+        TextView sub = new TextView(this);
+        sub.setText(d.tagline);
+        sub.setTextColor(Ui.INK_SOFT);
+        sub.setTextSize(11.5f);
+        sub.setIncludeFontPadding(false);
+        sub.setMaxLines(1);
+        sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        Ui.font(sub, 400);
+        LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        slp.topMargin = Ui.dpi(this, 5);
+        slp.rightMargin = Ui.dpi(this, 6);
+        content.addView(sub, slp);
+
+        View spacer = new View(this);
+        content.addView(spacer, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        content.addView(ctaBar("开始挑战", d.color, Color.WHITE,
+                        0x3DFFFFFF, Color.WHITE, () -> startChallenge(d)), ctaLp());
+        card.addView(tile(d, 48, d.color), tileLp());
+        return card;
+    }
+
+    /** 卡片右下角的通用按钮：左边文字，右边一个圆底箭头。 */
+    private LinearLayout ctaBar(String label, int pill, int labelColor,
+                                int arrowBg, int arrowColor, Runnable action) {
         LinearLayout cta = new LinearLayout(this);
         cta.setOrientation(LinearLayout.HORIZONTAL);
         cta.setGravity(Gravity.CENTER_VERTICAL);
-        cta.setBackground(Ui.ripple(this, Ui.round(this, Ui.SURFACE, 21f), 0x22000000));
-        cta.setPadding(Ui.dpi(this, 16), 0, Ui.dpi(this, 6), 0);
-        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 38));
-        content.addView(cta, clp);
+        cta.setBackground(Ui.ripple(this, Ui.round(this, pill, 19f), 0x22000000));
+        cta.setPadding(Ui.dpi(this, 15), 0, Ui.dpi(this, 5), 0);
+        cta.setClickable(true);
 
         TextView go = new TextView(this);
-        go.setText(day.rest ? "开始拉伸" : "开始训练");
-        go.setTextColor(Ui.ACCENT);
+        go.setText(label);
+        go.setTextColor(labelColor);
         go.setTextSize(14);
         go.setIncludeFontPadding(false);
         go.setGravity(Gravity.CENTER);
@@ -430,60 +512,93 @@ public class MainActivity extends Activity {
         cta.addView(go, new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1f));
 
-        FrameLayout arrow = new FrameLayout(this);
-        arrow.setBackground(Ui.round(this, Ui.ACCENT, 15f));
-        cta.addView(arrow, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 30), Ui.dpi(this, 30)));
-        IconView arrowIcon = new IconView(this);
-        arrowIcon.setIcon(IconView.ARROW);
-        arrowIcon.setColor(Color.WHITE);
-        arrow.addView(arrowIcon, new FrameLayout.LayoutParams(
-                Ui.dpi(this, 15), Ui.dpi(this, 15), Gravity.CENTER));
+        FrameLayout dot = new FrameLayout(this);
+        dot.setBackground(Ui.round(this, arrowBg, 14f));
+        cta.addView(dot, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 28), Ui.dpi(this, 28)));
+        IconView arrow = new IconView(this);
+        arrow.setIcon(IconView.ARROW);
+        arrow.setColor(arrowColor);
+        dot.addView(arrow, new FrameLayout.LayoutParams(
+                Ui.dpi(this, 14), Ui.dpi(this, 14), Gravity.CENTER));
 
-        cta.setOnClickListener(v -> startWorkout(dayIndex));
-
-        PhotoView photo = new PhotoView(this);
-        photo.setRadiusDp(28f);
-        photo.setAnimated(false);
-        photo.setOutline(0x66FFFFFF, 2f);
-        if (!day.exercises.isEmpty()) {
-            photo.bind(day.exercises.get(0));
-        }
-        FrameLayout.LayoutParams plp = new FrameLayout.LayoutParams(
-                Ui.dpi(this, 56), Ui.dpi(this, 56));
-        plp.gravity = Gravity.RIGHT | Gravity.TOP;
-        plp.topMargin = Ui.dpi(this, 12);
-        plp.rightMargin = Ui.dpi(this, 12);
-        card.addView(photo, plp);
-        photo.setOnClickListener(v -> openDay(dayIndex));
-
-        return card;
+        cta.setOnClickListener(v -> action.run());
+        return cta;
     }
 
-    /** 一行说完这张卡：时长 · 难度 · 重点 · 器械。 */
-    private String metaLine(Data.Day day) {
-        if (day.rest) {
-            return day.minutes() + " 分钟 · 全身放松 · 恢复日";
-        }
-        String level = Store.hasProfile(this) ? profile.levelLabel() : "新手";
-        String gear = Store.hasProfile(this) ? shortGear(profile.gearSummary()) : "徒手";
-        return Math.max(1, day.minutes()) + " 分钟 · " + level + " · "
-                + shortFocus(day.focus) + " · " + gear;
+    private LinearLayout.LayoutParams ctaLp() {
+        return new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 38));
     }
 
-    private String shortFocus(String focus) {
-        if (focus == null || focus.isEmpty()) {
-            return "全身";
-        }
-        int i = focus.indexOf('+');
-        return i > 0 ? focus.substring(0, i).trim() : focus;
+    private FrameLayout.LayoutParams tileLp() {
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                Ui.dpi(this, 48), Ui.dpi(this, 48));
+        lp.gravity = Gravity.RIGHT | Gravity.TOP;
+        lp.topMargin = Ui.dpi(this, 13);
+        lp.rightMargin = Ui.dpi(this, 13);
+        return lp;
     }
 
-    private String shortGear(String gear) {
-        if (gear == null || gear.isEmpty()) {
-            return "徒手";
+    private FrameLayout tile(Challenges.Def d, int sizeDp, int bg) {
+        FrameLayout tile = new FrameLayout(this);
+        tile.setBackground(Ui.round(this, bg, sizeDp * 0.31f));
+        IconView ic = new IconView(this);
+        ic.setIcon(d.icon);
+        ic.setColor(Color.WHITE);
+        int inner = Math.round(sizeDp * 0.52f);
+        tile.addView(ic, new FrameLayout.LayoutParams(
+                Ui.dpi(this, inner), Ui.dpi(this, inner), Gravity.CENTER));
+        return tile;
+    }
+
+    /** 「第 2/3 周 · 本周 2/3 次 · 还剩 12 天」。 */
+    private String progressLine(Challenges.Def d, Challenges.Progress pr) {
+        if (pr.done) {
+            return "全部 " + d.weeks + " 周达成，共 " + (d.weeks * d.perWeek) + " 次训练";
         }
-        return gear.contains("+") ? gear.substring(0, gear.indexOf('+')).trim() : gear;
+        if (pr.daysLeft == 0) {
+            return d.weeks + " 周走完，有 " + (d.weeks - pr.weeksDone) + " 周没达标";
+        }
+        return "第 " + (pr.currentWeek + 1) + "/" + d.weeks + " 周 · 本周 "
+                + Math.min(pr.thisWeek, d.perWeek) + "/" + d.perWeek + " 次 · 还剩 "
+                + pr.daysLeft + " 天";
+    }
+
+    /** 挑战卡上的「练一次」：今天有课就直接开练，休息日先看拉伸清单。 */
+    private void practice(int dayIndex) {
+        if (plan.get(dayIndex).rest) {
+            openDay(dayIndex);
+        } else {
+            startWorkout(dayIndex);
+        }
+    }
+
+    private void startChallenge(Challenges.Def d) {
+        Store.startChallenge(this, d.id, System.currentTimeMillis());
+        Toast.makeText(this, "已开始「" + d.name + "」", Toast.LENGTH_SHORT).show();
+        renderChallenges();
+    }
+
+    private void restartChallenge() {
+        Challenges.Def d = Challenges.byId(Store.challengeState(this).id);
+        if (d != null) {
+            Store.startChallenge(this, d.id, System.currentTimeMillis());
+            Toast.makeText(this, "重新开始「" + d.name + "」", Toast.LENGTH_SHORT).show();
+            renderChallenges();
+        }
+    }
+
+    private void openChallenges() {
+        startActivity(new Intent(this, ChallengeActivity.class));
+    }
+
+    /** 渐变深端：把颜色按比例压暗，用来做同色系的右端。 */
+    private static int shade(int color, float factor) {
+        int r = Math.min(255, Math.round(Color.red(color) * factor));
+        int g = Math.min(255, Math.round(Color.green(color) * factor));
+        int b = Math.min(255, Math.round(Color.blue(color) * factor));
+        return Color.rgb(r, g, b);
     }
 
     private void renderFocus() {

@@ -47,6 +47,9 @@ public class ResultActivity extends Activity {
     private final IconView[] feelIcons = new IconView[3];
     private final TextView[] feelTexts = new TextView[3];
     private int feel = -1;
+    /** 点第一下之前的难度档位，改主意时以它为准。 */
+    private int feelBaseLevel = -1;
+    private TextView feelTip;
 
     private TextView weightValue;
     private TextView weightMax;
@@ -123,6 +126,9 @@ public class ResultActivity extends Activity {
                 single == null ? "再做一次" : "再练这个动作");
         actions.addView(again, UiList.lp(this, 46, 8));
         again.setOnClickListener(v -> restart());
+
+        // 记录已经落盘了，把桌面上的小部件一起刷新，不用等它自己半小时后更新
+        StreakWidgetProvider.refresh(this);
     }
 
     private LinearLayout.LayoutParams cardLp() {
@@ -332,7 +338,9 @@ public class ResultActivity extends Activity {
         Ui.font(q, 600);
         card.addView(q);
         TextView tip = new TextView(this);
-        tip.setText("你的反馈只用于本机记录，方便下次调整。");
+        feelTip = tip;
+        tip.setText("现在是「" + Store.profile(this).levelLabel()
+                + "」。觉得轻松会加一档，吃力会降一档，下周生效。");
         tip.setTextColor(Ui.INK_SOFT);
         tip.setTextSize(12);
         tip.setPadding(0, Ui.dpi(this, 3), 0, Ui.dpi(this, 10));
@@ -392,7 +400,21 @@ public class ResultActivity extends Activity {
             Ui.font(feelTexts[i], on ? 700 : 500);
         }
         Store.setLastFeel(this, idx);
-        Toast.makeText(this, "已记录：" + FEEL_LABELS[idx], Toast.LENGTH_SHORT).show();
+
+        // 第一次点的时候记下原来的档位，之后再改主意都以它为准，
+        // 这样「太轻松 → 太吃力」不会把档位来回拉扯。
+        if (feelBaseLevel < 0) {
+            feelBaseLevel = Store.profile(this).level;
+        }
+        int delta = idx == 0 ? 1 : (idx == 2 ? -1 : 0);
+        Store.setLevel(this, feelBaseLevel + delta);
+        String now = Store.profile(this).levelLabel();
+        if (feelTip != null) {
+            feelTip.setText("现在是「" + now + "」。觉得轻松会加一档，吃力会降一档，下周生效。");
+        }
+        Toast.makeText(this, idx == 1 ? "已记录：刚刚好"
+                : "已记录：" + FEEL_LABELS[idx] + "，下周按「" + now + "」安排",
+                Toast.LENGTH_SHORT).show();
     }
 
     private LinearLayout weightCard() {
@@ -518,9 +540,8 @@ public class ResultActivity extends Activity {
     }
 
     private String reminderText() {
-        Store.Reminder r = Store.reminder(this);
-        return r.on ? r.timeText() + " · " + r.daysText() + " · 点按修改"
-                : "设置一个固定的训练时间";
+        String s = Store.reminderSummary(this);
+        return "未开启".equals(s) ? "设置一个固定的训练时间" : s + " · 点按修改";
     }
 
     private void restart() {
