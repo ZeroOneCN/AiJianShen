@@ -133,6 +133,17 @@ public class PlanProfile {
         return focus[0];
     }
 
+    /** 重点部位的位掩码，用于判断「条件是否变了」。 */
+    public int focusMask() {
+        int m = 0;
+        for (int i = 0; i < focus.length; i++) {
+            if (focus[i]) {
+                m |= 1 << i;
+            }
+        }
+        return m;
+    }
+
     /** 允许的部位集合；全身 = null 表示不限。 */
     public Set<String> parts() {
         if (focusAll()) {

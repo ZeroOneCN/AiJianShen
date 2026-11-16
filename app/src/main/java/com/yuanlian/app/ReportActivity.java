@@ -128,7 +128,7 @@ public class ReportActivity extends Activity {
     private void render() {
         int sessions = Store.daysTrained(this);
         int minutes = Store.totalMinutes(this);
-        int kcal = minutes * 6;
+        int kcal = Store.totalKcal(this);
 
         fillStat(findViewById(R.id.stat_col_1), IconView.TROPHY, String.valueOf(sessions), "运动");
         fillStat(findViewById(R.id.stat_col_2), IconView.FLAME, String.valueOf(kcal), "千卡");
@@ -209,6 +209,299 @@ public class ReportActivity extends Activity {
             Ui.font(l, i == 6 ? 600 : 400);
             chartLabels.addView(l, new LinearLayout.LayoutParams(0,
                     ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+
+        renderHeat();
+        renderParts();
+    }
+
+    /** 近 12 周热力图 + 本周与上周的对比。 */
+    private void renderHeat() {
+        LinearLayout card = findViewById(R.id.heat_card);
+        card.setBackground(Ui.round(this, Ui.SURFACE, 20f));
+        card.removeAllViews();
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(head);
+
+        TextView title = new TextView(this);
+        title.setText("训练热力图");
+        title.setTextColor(Ui.INK);
+        title.setTextSize(17);
+        Ui.font(title, 700);
+        head.addView(title, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView span = new TextView(this);
+        span.setText("近 12 周");
+        span.setTextColor(Ui.INK_SOFT);
+        span.setTextSize(12);
+        Ui.font(span, 400);
+        head.addView(span);
+
+        HeatmapView map = new HeatmapView(this);
+        String[] keys = new String[84];
+        int[] mins = new int[84];
+        java.util.Map<String, Integer> byDay = Store.dayMinutes(this);
+        Calendar walk = Calendar.getInstance();
+        int dow = (walk.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+        walk.add(Calendar.DAY_OF_MONTH, -dow - 11 * 7);
+        for (int i = 0; i < 84; i++) {
+            keys[i] = Store.key(walk);
+            Integer m = byDay.get(keys[i]);
+            mins[i] = m == null ? 0 : m;
+            walk.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        map.setData(keys, mins);
+        map.setOnDayClick((key, m) -> {
+            if (m <= 0) {
+                Toast.makeText(this, key + " 没有训练记录", Toast.LENGTH_SHORT).show();
+            } else {
+                InfoDialog.show(this, key, "当天训练 " + m + " 分钟。");
+            }
+        });
+        LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        mlp.topMargin = Ui.dpi(this, 14);
+        card.addView(map, mlp);
+
+        LinearLayout legend = new LinearLayout(this);
+        legend.setOrientation(LinearLayout.HORIZONTAL);
+        legend.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        llp.topMargin = Ui.dpi(this, 8);
+        card.addView(legend, llp);
+
+        TextView less = new TextView(this);
+        less.setText("少");
+        less.setTextColor(Ui.INK_SOFT);
+        less.setTextSize(10.5f);
+        Ui.font(less, 400);
+        legend.addView(less, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        int[] levels = {Ui.CARD_SOFT, 0xFFD9EDE4, 0xFF95C9B4, 0xFF4FA184, Ui.GREEN};
+        for (int color : levels) {
+            View sq = new View(this);
+            sq.setBackground(Ui.round(this, color, 3f));
+            LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(
+                    Ui.dpi(this, 11), Ui.dpi(this, 11));
+            slp.leftMargin = Ui.dpi(this, 3);
+            legend.addView(sq, slp);
+        }
+
+        TextView more = new TextView(this);
+        more.setText("多");
+        more.setTextColor(Ui.INK_SOFT);
+        more.setTextSize(10.5f);
+        more.setGravity(Gravity.RIGHT);
+        Ui.font(more, 400);
+        legend.addView(more, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        int[] now = weekStats(0);
+        int[] prev = weekStats(1);
+        LinearLayout cmp = new LinearLayout(this);
+        cmp.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        clp.topMargin = Ui.dpi(this, 14);
+        card.addView(cmp, clp);
+        cmp.addView(cmpCol("本周", now, Ui.INK), new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        cmp.addView(cmpCol("上周", prev, Ui.INK_SOFT), new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+    }
+
+    /** [分钟, 次数, 千卡]，offset=0 本周，1 上周。 */
+    private int[] weekStats(int offset) {
+        Calendar mon = Calendar.getInstance();
+        int dow = (mon.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+        mon.add(Calendar.DAY_OF_MONTH, -dow - offset * 7);
+        Set<String> keys = new java.util.HashSet<>();
+        for (int i = 0; i < 7; i++) {
+            keys.add(Store.key(mon));
+            mon.add(Calendar.DAY_OF_MONTH, 1);
+        }
+        int minutes = 0;
+        int count = 0;
+        int kcal = 0;
+        for (Store.Session s : Store.sessions(this)) {
+            if (!keys.contains(s.date)) {
+                continue;
+            }
+            minutes += s.minutes;
+            count++;
+            kcal += s.kcal > 0 ? s.kcal : s.minutes * 6;
+        }
+        return new int[]{minutes, count, kcal};
+    }
+
+    private LinearLayout cmpCol(String label, int[] stats, int color) {
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        TextView l = new TextView(this);
+        l.setText(label);
+        l.setTextColor(Ui.INK_SOFT);
+        l.setTextSize(12);
+        Ui.font(l, 400);
+        col.addView(l);
+        TextView v = new TextView(this);
+        v.setText(stats[0] + " 分钟 · " + stats[1] + " 次");
+        v.setTextColor(color);
+        v.setTextSize(16);
+        v.setIncludeFontPadding(false);
+        v.setPadding(0, Ui.dpi(this, 2), 0, 0);
+        Ui.font(v, 700);
+        col.addView(v);
+        TextView k = new TextView(this);
+        k.setText(stats[2] + " 千卡");
+        k.setTextColor(Ui.INK_SOFT);
+        k.setTextSize(11.5f);
+        Ui.font(k, 400);
+        col.addView(k);
+        return col;
+    }
+
+    /** 本周练到的部位分布（按训练记录里的动作 id 统计）。 */
+    private void renderParts() {
+        LinearLayout card = findViewById(R.id.part_card);
+        card.setBackground(Ui.round(this, Ui.SURFACE, 20f));
+        card.removeAllViews();
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(head);
+
+        TextView title = new TextView(this);
+        title.setText("本周练到的部位");
+        title.setTextColor(Ui.INK);
+        title.setTextSize(17);
+        Ui.font(title, 700);
+        head.addView(title, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        Calendar mon = Calendar.getInstance();
+        int dow = (mon.get(Calendar.DAY_OF_WEEK) + 5) % 7;
+        mon.add(Calendar.DAY_OF_MONTH, -dow);
+        Set<String> keys = new java.util.HashSet<>();
+        for (int i = 0; i < 7; i++) {
+            keys.add(Store.key(mon));
+            mon.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        // 先统计再画标题：这里要的是「本周」练过几个动作，
+        // 不能再用个人纪录表的累计数，否则卡片标题和右侧数字对不上。
+        java.util.Map<String, Integer> byPart = new java.util.LinkedHashMap<>();
+        Set<String> weekIds = new java.util.HashSet<>();
+        for (Store.Session s : Store.sessions(this)) {
+            if (!keys.contains(s.date) || s.ids == null || s.ids.isEmpty()) {
+                continue;
+            }
+            for (String id : s.ids.split(",")) {
+                Exercise e = Data.byId(id);
+                if (e == null || e.part == null) {
+                    continue;
+                }
+                weekIds.add(e.id);
+                Integer old = byPart.get(e.part);
+                byPart.put(e.part, old == null ? 1 : old + 1);
+            }
+        }
+
+        TextView moves = new TextView(this);
+        moves.setText(weekIds.isEmpty() ? "本周还没练" : "本周 " + weekIds.size() + " 个动作");
+        moves.setTextColor(Ui.INK_SOFT);
+        moves.setTextSize(12);
+        Ui.font(moves, 400);
+        head.addView(moves);
+
+        if (byPart.isEmpty()) {
+            TextView empty = new TextView(this);
+            empty.setText("这周还没有按动作统计的记录。下次训练完成后，这里会显示各部位练了几组。");
+            empty.setTextColor(Ui.INK_SOFT);
+            empty.setTextSize(12.5f);
+            empty.setLineSpacing(Ui.dp(this, 3), 1f);
+            empty.setPadding(0, Ui.dpi(this, 12), 0, 0);
+            Ui.font(empty, 400);
+            card.addView(empty);
+            return;
+        }
+
+        List<java.util.Map.Entry<String, Integer>> list =
+                new java.util.ArrayList<>(byPart.entrySet());
+        java.util.Collections.sort(list, (a, b) -> b.getValue() - a.getValue());
+        int max = Math.max(1, list.get(0).getValue());
+
+        for (int i = 0; i < list.size() && i < 6; i++) {
+            java.util.Map.Entry<String, Integer> e = list.get(i);
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            rlp.topMargin = Ui.dpi(this, 10);
+            card.addView(row, rlp);
+
+            TextView name = new TextView(this);
+            name.setText(e.getKey());
+            name.setTextColor(Ui.INK);
+            name.setTextSize(13);
+            Ui.font(name, 500);
+            row.addView(name, new LinearLayout.LayoutParams(
+                    Ui.dpi(this, 42), ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            LinearLayout track = new LinearLayout(this);
+            track.setOrientation(LinearLayout.HORIZONTAL);
+            track.setBackground(Ui.round(this, Ui.CARD_SOFT, 4f));
+            row.addView(track, new LinearLayout.LayoutParams(0,
+                    Ui.dpi(this, 8), 1f));
+
+            int color = partColor(e.getKey());
+            View fill = new View(this);
+            fill.setBackground(Ui.round(this, color, 4f));
+            track.addView(fill, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    Math.max(0.8f, e.getValue() * 100f / max)));
+            track.addView(new View(this), new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    Math.max(0.8f, (max - e.getValue()) * 100f / max)));
+
+            TextView num = new TextView(this);
+            num.setText(e.getValue() + " 组");
+            num.setTextColor(Ui.INK_SOFT);
+            num.setTextSize(12);
+            num.setGravity(Gravity.RIGHT);
+            Ui.font(num, 500);
+            LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(
+                    Ui.dpi(this, 48), ViewGroup.LayoutParams.WRAP_CONTENT);
+            nlp.leftMargin = Ui.dpi(this, 10);
+            row.addView(num, nlp);
+        }
+    }
+
+    private int partColor(String part) {
+        switch (part) {
+            case "核心":
+                return Ui.ORANGE;
+            case "腿臀":
+                return Ui.GREEN;
+            case "胸":
+                return Ui.BLUE_TILE;
+            case "背":
+                return Ui.PURPLE;
+            case "肩":
+                return Ui.TEAL;
+            case "手臂":
+                return Ui.RED;
+            case "有氧":
+                return Ui.ACCENT;
+            default:
+                return Ui.SLATE;
         }
     }
 
@@ -379,6 +672,90 @@ public class ReportActivity extends Activity {
         }
     }
 
+    /** 删除一条训练记录前的确认框。 */
+    private void confirmDelete(Dialog listDialog, Store.Session s) {
+        Dialog dialog = new Dialog(this);
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(Ui.round(this, Ui.SURFACE, 24f));
+        int p = Ui.dpi(this, 22);
+        root.setPadding(p, p, p, p);
+
+        TextView title = new TextView(this);
+        title.setText("删除这条记录？");
+        title.setTextColor(Ui.INK);
+        title.setTextSize(19);
+        Ui.font(title, 800);
+        root.addView(title);
+
+        TextView sub = new TextView(this);
+        sub.setText(s.title + " · " + s.minutes + " 分钟，删除后当天与累计分钟会一起扣回。");
+        sub.setTextColor(Ui.INK_SOFT);
+        sub.setTextSize(13);
+        sub.setLineSpacing(Ui.dp(this, 3), 1f);
+        sub.setPadding(0, Ui.dpi(this, 6), 0, 0);
+        Ui.font(sub, 400);
+        root.addView(sub);
+
+        LinearLayout actions = new LinearLayout(this);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 48));
+        alp.topMargin = Ui.dpi(this, 18);
+        root.addView(actions, alp);
+
+        TextView cancel = new TextView(this);
+        cancel.setText("保留");
+        cancel.setTextColor(Ui.INK_MUTED);
+        cancel.setTextSize(15);
+        cancel.setGravity(Gravity.CENTER);
+        cancel.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 24f), 0x14000000));
+        Ui.font(cancel, 600);
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+        clp.rightMargin = Ui.dpi(this, 10);
+        actions.addView(cancel, clp);
+
+        TextView del = new TextView(this);
+        del.setText("删除");
+        del.setTextColor(Color.WHITE);
+        del.setTextSize(15);
+        del.setGravity(Gravity.CENTER);
+        del.setBackground(Ui.ripple(this, Ui.round(this, Ui.RED, 24f), 0x33FFFFFF));
+        Ui.font(del, 700);
+        actions.addView(del, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        del.setOnClickListener(v -> {
+            boolean ok = Store.deleteSession(this, s.ts);
+            dialog.dismiss();
+            if (ok) {
+                listDialog.dismiss();
+                render();
+                Toast.makeText(this, "已删除这条记录", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "这条记录已经不在了", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        dialog.setContentView(root);
+        Window w = dialog.getWindow();
+        if (w != null) {
+            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp = w.getAttributes();
+            lp.dimAmount = 0.45f;
+            w.setAttributes(lp);
+        }
+        dialog.show();
+        if (w != null) {
+            w.setLayout(getResources().getDisplayMetrics().widthPixels - Ui.dpi(this, 64),
+                    ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
+    }
+
     private void showRecords() {
         Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -394,6 +771,14 @@ public class ReportActivity extends Activity {
         title.setTextSize(20);
         Ui.font(title, 800);
         root.addView(title);
+
+        TextView tip = new TextView(this);
+        tip.setText("长按某条记录可以删除，当天的分钟数会一起扣回。");
+        tip.setTextColor(Ui.INK_SOFT);
+        tip.setTextSize(12);
+        tip.setPadding(0, Ui.dpi(this, 5), 0, 0);
+        Ui.font(tip, 400);
+        root.addView(tip);
 
         List<Store.Session> list = Store.sessions(this);
 
@@ -466,7 +851,12 @@ public class ReportActivity extends Activity {
                 min.setTextColor(Ui.ACCENT);
                 min.setTextSize(13);
                 Ui.font(min, 600);
-                row.addView(min);
+                row.addView(min, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                row.setOnLongClickListener(v -> {
+                    confirmDelete(dialog, s);
+                    return true;
+                });
 
                 View divider = new View(this);
                 divider.setBackgroundColor(0xFFEFEFF2);

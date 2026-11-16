@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -17,17 +19,24 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 public class LibraryActivity extends Activity {
 
     public static final String EXTRA_PART = "part";
+
+    /** 特殊筛选：只看收藏。各部位用真实部位名，故用这个不会冲突。 */
+    private static final String FAV = "收藏";
 
     private LinearLayout chipBox;
     private ListView listView;
@@ -38,6 +47,10 @@ public class LibraryActivity extends Activity {
     private final List<TextView> chipViews = new ArrayList<>();
     private final List<Exercise> shown = new ArrayList<>();
     private ExerciseAdapter adapter;
+
+    /** 输入防抖：1324 条数据每敲一个字就重排列表会掉帧。 */
+    private final Handler debounce = new Handler(Looper.getMainLooper());
+    private final Runnable doSearch = this::render;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,6 +77,15 @@ public class LibraryActivity extends Activity {
         IconView searchIcon = findViewById(R.id.icon_search);
         searchIcon.setIcon(IconView.SEARCH);
         searchIcon.setColor(Ui.INK_SOFT);
+        // 点整条搜索框的任意位置都直接进输入状态，不用正好点在文字上
+        searchBar.setOnClickListener(v -> {
+            etSearch.requestFocus();
+            android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager)
+                    getSystemService(INPUT_METHOD_SERVICE);
+            if (im != null) {
+                im.showSoftInput(etSearch, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
 
         Ui.font(tvCount, 500);
         Ui.font(etSearch, 400);
@@ -79,12 +101,14 @@ public class LibraryActivity extends Activity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                render();
+                debounce.removeCallbacks(doSearch);
+                debounce.postDelayed(doSearch, 120);
             }
         });
 
         List<String> cats = new ArrayList<>();
         cats.add("全部");
+        cats.add(FAV);
         cats.addAll(Data.parts());
         for (String c : cats) {
             addChip(c);
@@ -99,6 +123,10 @@ public class LibraryActivity extends Activity {
 
         adapter = new ExerciseAdapter(this);
         listView.setAdapter(adapter);
+        // 列表一旦拿到焦点，搜索框就收不到键盘输入（部分机型、输入法下必现），
+        // 这里让列表只负责点击和滚动，焦点始终留给搜索框。
+        listView.setFocusable(false);
+        listView.setFocusableInTouchMode(false);
         listView.setOnItemClickListener((parent, view, position, id) -> showDetail(shown.get(position)));
 
         render();
@@ -128,20 +156,56 @@ public class LibraryActivity extends Activity {
     }
 
     private void paintChips() {
+        int favCount = Store.favoriteIds(this).size();
         for (TextView chip : chipViews) {
-            boolean on = String.valueOf(chip.getTag()).equals(selectedPart);
+            String tag = String.valueOf(chip.getTag());
+            boolean on = tag.equals(selectedPart);
             chip.setTextColor(on ? Ui.SURFACE : Ui.INK_SOFT);
             chip.setBackground(Ui.round(this, on ? Ui.ACCENT : Ui.SURFACE, Ui.R_CHIP));
+            if (FAV.equals(tag)) {
+                chip.setText(favCount > 0 ? FAV + " " + favCount : FAV);
+            }
         }
     }
 
     private void render() {
         paintChips();
         shown.clear();
-        shown.addAll(Data.search(etSearch.getText().toString(), selectedPart));
+        String q = etSearch.getText().toString().trim().toLowerCase(Locale.ROOT);
+        if (FAV.equals(selectedPart)) {
+            Set<String> ids = Store.favoriteIds(this);
+            for (Exercise e : Data.all()) {
+                if (ids.contains(e.id) && e.matches(q, null)) {
+                    shown.add(e);
+                }
+            }
+        } else {
+            shown.addAll(Data.search(q, selectedPart));
+        }
         adapter.notifyDataSetChanged();
-        tvCount.setText(shown.size() + " 个动作");
+        if (shown.isEmpty()) {
+            tvCount.setText(FAV.equals(selectedPart) && q.isEmpty()
+                    ? "还没有收藏的动作：在动作详情里点星标收藏"
+                    : "没有匹配的动作，换个关键字试试");
+        } else {
+            tvCount.setText(shown.size() + " 个动作");
+        }
         listView.setVisibility(shown.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 从详情里改了收藏，回来时要刷新计数与列表
+        if (adapter != null) {
+            render();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        debounce.removeCallbacksAndMessages(null);
+        super.onDestroy();
     }
 
     /** 动作详情：动图与白色面板融为一体，滚动机要，底部固定开练按钮。 */
@@ -230,6 +294,37 @@ public class LibraryActivity extends Activity {
             box.addView(gear, glp);
         }
 
+        Store.Pr pr = Store.pr(this, e.id);
+        if (pr != null && pr.bestSeconds > 0) {
+            LinearLayout rec = new LinearLayout(this);
+            rec.setOrientation(LinearLayout.HORIZONTAL);
+            rec.setGravity(Gravity.CENTER_VERTICAL);
+            rec.setBackground(Ui.round(this, Ui.GREEN_SOFT, 14f));
+            int rp = Ui.dpi(this, 12);
+            rec.setPadding(rp, rp, rp, rp);
+            LinearLayout.LayoutParams recLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            recLp.topMargin = Ui.dpi(this, 14);
+            box.addView(rec, recLp);
+
+            IconView ic = new IconView(this);
+            ic.setIcon(IconView.TROPHY);
+            ic.setColor(Ui.GREEN);
+            ic.setStrokeDp(2f);
+            LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
+                    Ui.dpi(this, 20), Ui.dpi(this, 20));
+            ilp.rightMargin = Ui.dpi(this, 8);
+            rec.addView(ic, ilp);
+
+            TextView t = new TextView(this);
+            t.setText("个人纪录：单组最长 " + pr.bestSeconds + " 秒 · 累计 " + pr.sets + " 组");
+            t.setTextColor(Ui.GREEN);
+            t.setTextSize(12.5f);
+            Ui.font(t, 600);
+            rec.addView(t, new LinearLayout.LayoutParams(0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        }
+
         section(box, "动作要领");
         for (int i = 0; i < e.steps.size(); i++) {
             LinearLayout row = new LinearLayout(this);
@@ -276,6 +371,20 @@ public class LibraryActivity extends Activity {
         Ui.font(close, 600);
         footer.addView(close, new LinearLayout.LayoutParams(0, Ui.dpi(this, 50), 1f));
 
+        // 收藏：星标亮起表示已收藏，动作库顶部可以只看收藏
+        final FrameLayout favBtn = new FrameLayout(this);
+        favBtn.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 25f), 0x22000000));
+        IconView favIcon = new IconView(this);
+        favIcon.setIcon(IconView.STAR);
+        favIcon.setStrokeDp(2f);
+        favBtn.addView(favIcon, new FrameLayout.LayoutParams(
+                Ui.dpi(this, 22), Ui.dpi(this, 22), Gravity.CENTER));
+        LinearLayout.LayoutParams favLp = new LinearLayout.LayoutParams(
+                Ui.dpi(this, 50), Ui.dpi(this, 50));
+        favLp.leftMargin = Ui.dpi(this, 8);
+        footer.addView(favBtn, favLp);
+        paintFav(favIcon, e);
+
         TextView start = new TextView(this);
         start.setText("练这个动作");
         start.setTextColor(Ui.SURFACE);
@@ -288,6 +397,12 @@ public class LibraryActivity extends Activity {
         footer.addView(start, slp);
 
         close.setOnClickListener(v -> dialog.dismiss());
+        favBtn.setOnClickListener(v -> {
+            boolean on = Store.toggleFavorite(this, e.id);
+            paintFav(favIcon, e);
+            paintChips();
+            Toast.makeText(this, on ? "已收藏：" + e.name : "已取消收藏", Toast.LENGTH_SHORT).show();
+        });
         start.setOnClickListener(v -> {
             dialog.dismiss();
             Intent it = new Intent(this, WorkoutActivity.class);
@@ -310,6 +425,12 @@ public class LibraryActivity extends Activity {
             int height = Math.round(getResources().getDisplayMetrics().heightPixels * 0.88f);
             w.setLayout(width, height);
         }
+    }
+
+    private void paintFav(IconView icon, Exercise e) {
+        boolean on = Store.isFavorite(this, e.id);
+        icon.setColor(on ? Ui.ORANGE : Ui.INK_MUTED);
+        icon.setAlpha(on ? 1f : 0.75f);
     }
 
     private void section(LinearLayout parent, String text) {

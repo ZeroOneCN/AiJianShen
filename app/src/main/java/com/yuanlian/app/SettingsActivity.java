@@ -32,6 +32,9 @@ public class SettingsActivity extends Activity {
         TextView title = findViewById(R.id.tv_title);
         Ui.font(title, 800);
 
+        TextView footer = findViewById(R.id.tv_footer);
+        footer.setText("私人健身教练 " + versionName() + " · 本地训练版");
+
         IconView user = findViewById(R.id.icon_user);
         user.setIcon(IconView.USER);
         user.setColor(Ui.ACCENT);
@@ -72,6 +75,12 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.DUMBBELL, Ui.BLUE_TILE, "动作库",
                 Data.all().size() + " 个动作，可搜索、看要领", false,
                 v -> startActivity(new Intent(this, LibraryActivity.class)));
+        addRow(main, IconView.RACK, Ui.PURPLE, "我的训练",
+                "自己挑动作存成模板，随时一键开练", false,
+                v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        addRow(main, IconView.TROPHY, Ui.GREEN, "成就",
+                "已点亮 " + Achievements.earned(this) + " 枚徽章", false,
+                v -> startActivity(new Intent(this, AchievementsActivity.class)));
         addRow(main, IconView.SLIDERS, Ui.ORANGE, "训练设置",
                 "预备、休息、语音、音乐与提示音", false,
                 v -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
@@ -87,6 +96,11 @@ public class SettingsActivity extends Activity {
         addRow(main, IconView.WIFI, Ui.BLUE_TILE, "手机间同步",
                 "换手机时把训练与体重数据搬过去", false,
                 v -> startActivity(new Intent(this, SyncActivity.class)));
+        addRow(main, IconView.SHARE, Ui.TEAL, "导出备份",
+                "把全部记录写成一个 JSON 文件", false, v -> exportData());
+        addRow(main, IconView.REFRESH, Ui.SLATE, "从备份恢复",
+                "读取 JSON 文件，按并集合并，不会覆盖本机记录", false,
+                v -> importData());
         addRow(main, IconView.SCALE, Ui.BLUE_TILE, "连接体脂秤",
                 "蓝牙直连，读体重与体脂率", false,
                 v -> startActivity(new Intent(this, ScaleActivity.class)));
@@ -102,7 +116,17 @@ public class SettingsActivity extends Activity {
                 v -> share());
         addRow(more, IconView.STAR, Ui.SLATE, "关于私人健身教练", "版本与说明", true,
                 v -> info("关于私人健身教练",
-                        "私人健身教练 1.6\n\n训练记录、体重与计划条件只保存在本机，不需要账号，也不上传。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+                        "私人健身教练 " + versionName() + "\n\n训练记录、体重与计划条件只保存在本机，不需要账号，也不上传。\n\n本应用不包含原版应用的任何图片、插画、动画或文案。"));
+    }
+
+    /** 版本号从安装包读取，避免和 build.gradle 里写的版本对不上。 */
+    private String versionName() {
+        try {
+            String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            return v == null || v.isEmpty() ? "1.8.3" : v;
+        } catch (Exception e) {
+            return "1.8.3";
+        }
     }
 
     @Override
@@ -201,6 +225,97 @@ public class SettingsActivity extends Activity {
 
     private void info(String title, String message) {
         dialog(title, message, "知道了", Ui.ACCENT, null);
+    }
+
+    // ---- 备份：导出/恢复都走系统文件选择器，不碰任何网络 ----
+
+    private static final int REQ_EXPORT = 2001;
+    private static final int REQ_IMPORT = 2002;
+
+    private void exportData() {
+        Intent it = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        it.addCategory(Intent.CATEGORY_OPENABLE);
+        it.setType("application/json");
+        it.putExtra(Intent.EXTRA_TITLE,
+                "yuanlian-" + Store.key(java.util.Calendar.getInstance()) + ".json");
+        try {
+            startActivityForResult(it, REQ_EXPORT);
+        } catch (Exception e) {
+            Toast.makeText(this, "这台设备没有可用的文件选择器", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void importData() {
+        Intent it = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        it.addCategory(Intent.CATEGORY_OPENABLE);
+        it.setType("*/*");
+        it.putExtra(Intent.EXTRA_MIME_TYPES,
+                new String[]{"application/json", "text/plain", "application/octet-stream"});
+        try {
+            startActivityForResult(it, REQ_IMPORT);
+        } catch (Exception e) {
+            Toast.makeText(this, "这台设备没有可用的文件选择器", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_EXPORT && requestCode != REQ_IMPORT) {
+            return;
+        }
+        if (resultCode != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        android.net.Uri uri = data.getData();
+        if (requestCode == REQ_EXPORT) {
+            try (java.io.OutputStream os = getContentResolver().openOutputStream(uri)) {
+                if (os == null) {
+                    throw new java.io.IOException("无法写入");
+                }
+                os.write(LanSync.snapshot(this).toString()
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                os.flush();
+                Toast.makeText(this, "已导出，建议另存一份到电脑", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
+        } else if (requestCode == REQ_IMPORT) {
+            // 只读前 8 MB：备份就是一份几百字节的 JSON，超过这个量说明选错了文件，
+            // 不设上限的话选个视频就会把整个文件读进内存崩掉。
+            final int limit = 8 * 1024 * 1024;
+            try (java.io.InputStream in = getContentResolver().openInputStream(uri)) {
+                if (in == null) {
+                    throw new java.io.IOException("无法读取");
+                }
+                java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int n;
+                int total = 0;
+                while ((n = in.read(buf)) > 0) {
+                    total += n;
+                    if (total > limit) {
+                        Toast.makeText(this, "这个文件太大，不是本应用的备份",
+                                Toast.LENGTH_LONG).show();
+                        return;
+                    }
+                    bos.write(buf, 0, n);
+                }
+                String text = new String(bos.toByteArray(),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                Store.MergeStats st = LanSync.merge(this, new org.json.JSONObject(text));
+                if (st.nothing()) {
+                    Toast.makeText(this, "没有新数据，本机已经包含了这份备份",
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(this, "已恢复：新增 " + st.days + " 个训练日、"
+                            + st.sessions + " 条训练记录、" + st.weights + " 条体重",
+                            Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(this, "这份文件不是本应用的备份", Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void dialog(String titleText, String message, String primary,

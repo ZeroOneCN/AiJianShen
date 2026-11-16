@@ -145,8 +145,57 @@ public class MainActivity extends Activity {
         renderWeekGoal();
         renderCoach();
         renderChallenges();
+        renderQuick();
         renderFocus();
         renderPlan();
+    }
+
+    /** 快捷入口：5 分钟微训练、我的训练、成就。 */
+    private void renderQuick() {
+        LinearLayout box = findViewById(R.id.quick_card);
+        box.removeAllViews();
+        LinearLayout card = UiList.card(this);
+        box.addView(card);
+
+        int tpl = Store.templates(this).size();
+        UiList.row(this, card, IconView.BOLT, Ui.ORANGE, "5 分钟微训练",
+                "随机 4 个徒手动作，一个动作 60 秒，不挑场地",
+                false, v -> startQuick());
+        UiList.row(this, card, IconView.DUMBBELL, Ui.PURPLE, "我的训练",
+                tpl > 0 ? tpl + " 个自己编排的训练，点一下开练"
+                        : "挑几个动作存成模板，以后一键开练", false,
+                v -> startActivity(new Intent(this, TemplatesActivity.class)));
+        UiList.row(this, card, IconView.TROPHY, Ui.GREEN, "成就",
+                "已点亮 " + Achievements.earned(this) + " 枚，看看下一个差多少", true,
+                v -> startActivity(new Intent(this, AchievementsActivity.class)));
+        box.setVisibility(View.VISIBLE);
+    }
+
+    /** 随机挑几个不用器械的力量/核心动作，凑一段五分钟。 */
+    private void startQuick() {
+        List<Exercise> pool = new java.util.ArrayList<>();
+        for (Exercise e : Data.all()) {
+            boolean bare = e.gear == null || e.gear.isEmpty();
+            boolean strength = "力量".equals(e.kind) || "核心".equals(e.kind);
+            if (bare && strength) {
+                pool.add(e);
+            }
+        }
+        java.util.Collections.shuffle(pool);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(4, pool.size()); i++) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(pool.get(i).id);
+        }
+        Intent it = new Intent(this, WorkoutActivity.class);
+        it.putExtra(WorkoutActivity.EXTRA_IDS, sb.toString());
+        it.putExtra(WorkoutActivity.EXTRA_ROUNDS, 1);
+        it.putExtra(WorkoutActivity.EXTRA_SECONDS, 60);
+        it.putExtra(WorkoutActivity.EXTRA_REST, 15);
+        it.putExtra(WorkoutActivity.EXTRA_TITLE, "5 分钟微训练");
+        startActivity(it);
     }
 
     private void renderStreak() {
@@ -199,17 +248,39 @@ public class MainActivity extends Activity {
     private void renderCoach() {
         boolean doneToday = Store.dates(this).contains(Store.key(Calendar.getInstance()));
         Data.Day today = plan.get(todayIndex);
+        Store.Pending pending = Store.pending(this);
+        // 只要有没做完的存档就给入口。之前还要求「今天没练完」，
+        // 结果是今天练过一次、又开了一次没做完的情况下，存档再也回不去了。
+        boolean resume = pending != null;
+
+        LinearLayout coach = findViewById(R.id.coach_row);
+        IconView coachIcon = findViewById(R.id.icon_coach);
         String copy;
-        if (doneToday) {
+        if (resume) {
+            // 上次没练完：把这一条变成「继续」入口，比让他自己在计划里找更直接
+            int left = Math.max(1, pending.ids.size() - pending.index);
+            copy = "上次「" + pending.title + "」还差一点，点这里接着练（剩 " + left + " 步）";
+            coachIcon.setIcon(IconView.PLAY);
+        } else if (doneToday) {
             copy = "今天已经练完了。做几组拉伸，给身体一点收尾。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else if (today.rest) {
             copy = "今天是恢复日。慢慢拉开肩背，明天状态会更好。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else if (!Store.hasProfile(this)) {
             copy = "先花半分钟告诉我你的目标，我来排好这一周。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         } else {
             copy = "欢迎回来！今天安排的是「" + today.title + "」，跟着节奏来就好。";
+            coachIcon.setIcon(IconView.DUMBBELL);
         }
+        coachIcon.setColor(resume ? Ui.GREEN : Ui.ACCENT);
         tvCoach.setText(copy);
+        coach.setOnClickListener(resume
+                ? v -> startActivity(new Intent(this, WorkoutActivity.class)
+                .putExtra(WorkoutActivity.EXTRA_RESUME, true))
+                : null);
+        coach.setClickable(resume);
     }
 
     private void renderChallenges() {

@@ -38,6 +38,10 @@ public final class Store {
     private static final String K_BODY = "body_records";
     private static final String K_AGE = "age";
     private static final String K_SEX = "sex";
+    private static final String K_FAV = "favorites";
+    private static final String K_PENDING = "pending_workout";
+    private static final String K_PR = "personal_records";
+    private static final String K_TMPL = "my_workouts";
 
     private Store() {
     }
@@ -46,8 +50,24 @@ public final class Store {
         return c.getSharedPreferences(SP, Context.MODE_PRIVATE);
     }
 
+    /**
+     * SimpleDateFormat 不是线程安全的，而局域网同步会在自己的线程里读数据；
+     * 每个线程各持一个实例，避免为了线程安全反复 new（key() 每次界面刷新要调用几十次）。
+     */
+    private static final ThreadLocal<SimpleDateFormat> DAY_FMT =
+            new ThreadLocal<SimpleDateFormat>() {
+                @Override
+                protected SimpleDateFormat initialValue() {
+                    return new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                }
+            };
+
+    private static String formatDay(long millis) {
+        return DAY_FMT.get().format(new Date(millis));
+    }
+
     public static String key(Calendar cal) {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date(cal.getTimeInMillis()));
+        return formatDay(cal.getTimeInMillis());
     }
 
     public static void markDone(Context c, Calendar cal, int minutes) {
@@ -55,6 +75,20 @@ public final class Store {
     }
 
     public static void markDone(Context c, Calendar cal, int minutes, String title, int count) {
+        markDone(c, cal, minutes, title, count, -1, null);
+    }
+
+    public static void markDone(Context c, Calendar cal, int minutes, String title, int count,
+                                int kcal) {
+        markDone(c, cal, minutes, title, count, kcal, null);
+    }
+
+    /**
+     * @param kcal 本次消耗；-1 表示没有算（旧版补记），展示时按分钟数回退估算
+     * @param ids  本次练过的动作 id（逗号分隔）；用来统计部位分布与「练过多少个动作」
+     */
+    public static void markDone(Context c, Calendar cal, int minutes, String title, int count,
+                                int kcal, String ids) {
         Set<String> dates = new HashSet<>(sp(c).getStringSet(K_DATES, new HashSet<String>()));
         dates.add(key(cal));
         JSONObject dayMap = dayMap(c);
@@ -69,7 +103,9 @@ public final class Store {
         s.title = title == null || title.isEmpty() ? "训练" : title;
         s.minutes = minutes;
         s.count = count;
+        s.kcal = kcal;
         s.feel = -1;
+        s.ids = ids == null ? "" : ids;
         log.add(0, s);
         while (log.size() > 400) {
             log.remove(log.size() - 1);
@@ -253,8 +289,12 @@ public final class Store {
         public String title = "";
         public int minutes;
         public int count;
+        /** 本次消耗（千卡）；-1 表示旧记录没有这个字段。 */
+        public int kcal = -1;
         /** -1 未选择，0 太轻松，1 刚刚好，2 太吃力 */
         public int feel = -1;
+        /** 本次练过的动作 id，逗号分隔；旧记录为空串。 */
+        public String ids = "";
     }
 
     public static List<Session> sessions(Context c) {
@@ -269,7 +309,9 @@ public final class Store {
                 s.title = o.optString("n", "训练");
                 s.minutes = o.optInt("m", 0);
                 s.count = o.optInt("c", 0);
+                s.kcal = o.optInt("k", -1);
                 s.feel = o.optInt("f", -1);
+                s.ids = o.optString("x", "");
                 out.add(s);
             }
         } catch (Exception ignored) {
@@ -287,7 +329,13 @@ public final class Store {
                 o.put("n", s.title);
                 o.put("m", s.minutes);
                 o.put("c", s.count);
+                if (s.kcal > 0) {
+                    o.put("k", s.kcal);
+                }
                 o.put("f", s.feel);
+                if (s.ids != null && !s.ids.isEmpty()) {
+                    o.put("x", s.ids);
+                }
             } catch (Exception ignored) {
             }
             arr.put(o);
@@ -295,8 +343,402 @@ public final class Store {
         return arr.toString();
     }
 
-    // ---- 训练偏好 ----
+    /**
+     * 累计消耗。新记录直接取训练时算好的值；旧记录没有卡路里字段，
+     * 按每分钟 6 千卡的旧口径回退，保证升级后总数不会突然变小。
+     */
+    public static int totalKcal(Context c) {
+        return totalKcal(sessions(c));
+    }
 
+    /** 已经读过记录时用这个重载，省一次 JSON 解析。 */
+    public static int totalKcal(List<Session> log) {
+        int sum = 0;
+        for (Session s : log) {
+            sum += s.kcal > 0 ? s.kcal : s.minutes * 6;
+        }
+        return sum;
+    }
+
+    /** 删除一条训练记录，并把当天的分钟数与累计分钟一起扣回去。 */
+    public static boolean deleteSession(Context c, long ts) {
+        List<Session> log = sessions(c);
+        Session target = null;
+        for (Session s : log) {
+            if (s.ts == ts) {
+                target = s;
+                break;
+            }
+        }
+        if (target == null) {
+            return false;
+        }
+        log.remove(target);
+        JSONObject dayMap = dayMap(c);
+        String day = target.date;
+        int left = Math.max(0, dayMap.optInt(day, 0) - target.minutes);
+        Set<String> dates = new HashSet<>(sp(c).getStringSet(K_DATES, new HashSet<String>()));
+        try {
+            if (left > 0) {
+                dayMap.put(day, left);
+            } else {
+                dayMap.remove(day);
+                // 当天还有别的记录（或手动补记过）时不算空
+                if (!hasSessionOn(log, day)) {
+                    dates.remove(day);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        int total = Math.max(0, sp(c).getInt(K_MINUTES, 0) - target.minutes);
+        SharedPreferences.Editor ed = sp(c).edit()
+                .putStringSet(K_DATES, dates)
+                .putString(K_DAY_MINUTES, dayMap.toString())
+                .putString(K_SESSIONS, sessionsJson(log))
+                .putInt(K_MINUTES, total);
+        if (day.equals(sp(c).getString(K_LAST, ""))) {
+            ed.remove(K_LAST);
+        }
+        ed.apply();
+        return true;
+    }
+
+    private static boolean hasSessionOn(List<Session> log, String day) {
+        for (Session s : log) {
+            if (day.equals(s.date)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ---- 收藏的动作 ----
+
+    public static Set<String> favoriteIds(Context c) {
+        return new HashSet<>(sp(c).getStringSet(K_FAV, new HashSet<String>()));
+    }
+
+    public static boolean isFavorite(Context c, String id) {
+        return id != null && sp(c).getStringSet(K_FAV, new HashSet<String>()).contains(id);
+    }
+
+    /** @return 收藏后的状态 */
+    public static boolean toggleFavorite(Context c, String id) {
+        if (id == null || id.isEmpty()) {
+            return false;
+        }
+        Set<String> ids = new HashSet<>(sp(c).getStringSet(K_FAV, new HashSet<String>()));
+        boolean on;
+        if (ids.contains(id)) {
+            ids.remove(id);
+            on = false;
+        } else {
+            ids.add(id);
+            on = true;
+        }
+        sp(c).edit().putStringSet(K_FAV, ids).apply();
+        return on;
+    }
+
+    // ---- 个人纪录：每个动作练过多少组、单组最长坚持多久 ----
+
+    public static class Pr {
+        public String id = "";
+        /** 单组最长坚持的秒数 */
+        public int bestSeconds;
+        /** 累计完成组数 */
+        public int sets;
+        /** 最近一次练的时间 */
+        public long last;
+    }
+
+    public static Map<String, Pr> prs(Context c) {
+        Map<String, Pr> out = new LinkedHashMap<>();
+        try {
+            JSONObject all = new JSONObject(sp(c).getString(K_PR, "{}"));
+            java.util.Iterator<String> it = all.keys();
+            while (it.hasNext()) {
+                String id = it.next();
+                JSONObject o = all.optJSONObject(id);
+                if (o == null) {
+                    continue;
+                }
+                Pr p = new Pr();
+                p.id = id;
+                p.bestSeconds = o.optInt("s", 0);
+                p.sets = o.optInt("n", 0);
+                p.last = o.optLong("t", 0);
+                out.put(id, p);
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    public static Pr pr(Context c, String id) {
+        return id == null || id.isEmpty() ? null : prs(c).get(id);
+    }
+
+    /** 练过多少个不同的动作。 */
+    public static int prCount(Context c) {
+        return prs(c).size();
+    }
+    /**
+     * 记一组完成。
+     *
+     * @return true 表示刷新了这个动作的单组最长纪录（第一次练也算「新纪录」）
+     */
+    public static boolean recordPr(Context c, String id, int seconds) {
+        if (id == null || id.isEmpty() || seconds <= 0) {
+            return false;
+        }
+        Map<String, Pr> all = prs(c);
+        Pr p = all.get(id);
+        boolean fresh = p == null || seconds > p.bestSeconds;
+        if (p == null) {
+            p = new Pr();
+            p.id = id;
+            all.put(id, p);
+        }
+        if (seconds > p.bestSeconds) {
+            p.bestSeconds = seconds;
+        }
+        p.sets += 1;
+        p.last = System.currentTimeMillis();
+        JSONObject o = new JSONObject();
+        try {
+            for (Pr v : all.values()) {
+                JSONObject j = new JSONObject();
+                j.put("s", v.bestSeconds);
+                j.put("n", v.sets);
+                j.put("t", v.last);
+                o.put(v.id, j);
+            }
+        } catch (Exception ignored) {
+        }
+        sp(c).edit().putString(K_PR, o.toString()).apply();
+        return fresh;
+    }
+
+    // ---- 我的训练：自己挑动作存成模板，随时一键开练 ----
+
+    public static class Template {
+        public String id = "";
+        public String name = "";
+        public List<String> ids = new ArrayList<>();
+        public int rounds = 1;
+        public int seconds = 40;
+        public int rest = 20;
+        public long created;
+
+        public int totalMinutes() {
+            int one = ids.size() * (seconds + rest);
+            return Math.max(1, Math.round(one * Math.max(1, rounds) / 60f));
+        }
+
+        public String summary() {
+            return ids.size() + " 个动作 · " + rounds + " 轮 · 约 " + totalMinutes() + " 分钟";
+        }
+    }
+
+    public static List<Template> templates(Context c) {
+        List<Template> out = new ArrayList<>();
+        try {
+            JSONArray arr = new JSONArray(sp(c).getString(K_TMPL, "[]"));
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject o = arr.getJSONObject(i);
+                Template t = new Template();
+                t.id = o.optString("id", "");
+                t.name = o.optString("n", "我的训练");
+                t.rounds = Math.max(1, o.optInt("r", 1));
+                t.seconds = Math.max(10, o.optInt("s", 40));
+                t.rest = Math.max(0, o.optInt("t", 20));
+                t.created = o.optLong("at", 0);
+                String ids = o.optString("x", "");
+                if (!ids.isEmpty()) {
+                    for (String one : ids.split(",")) {
+                        if (!one.isEmpty()) {
+                            t.ids.add(one);
+                        }
+                    }
+                }
+                out.add(t);
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    public static Template template(Context c, String id) {
+        for (Template t : templates(c)) {
+            if (t.id.equals(id)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    /** 按 id 保存：已存在则覆盖，不存在则新建。 */
+    public static void saveTemplate(Context c, Template t) {
+        if (t == null) {
+            return;
+        }
+        if (t.id == null || t.id.isEmpty()) {
+            t.id = "t" + System.currentTimeMillis();
+        }
+        if (t.created == 0) {
+            t.created = System.currentTimeMillis();
+        }
+        List<Template> all = templates(c);
+        boolean replaced = false;
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id.equals(t.id)) {
+                all.set(i, t);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced) {
+            all.add(t);
+        }
+        sp(c).edit().putString(K_TMPL, templatesJson(all).toString()).apply();
+    }
+
+    public static void deleteTemplate(Context c, String id) {
+        List<Template> all = templates(c);
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id.equals(id)) {
+                all.remove(i);
+                break;
+            }
+        }
+        sp(c).edit().putString(K_TMPL, templatesJson(all).toString()).apply();
+    }
+
+    /** 模板列表 → JSON。save 与 delete 共用，避免两处序列化字段不同步。 */
+    private static JSONArray templatesJson(List<Template> list) {
+        JSONArray arr = new JSONArray();
+        for (Template v : list) {
+            JSONObject o = new JSONObject();
+            try {
+                o.put("id", v.id);
+                o.put("n", v.name);
+                o.put("r", v.rounds);
+                o.put("s", v.seconds);
+                o.put("t", v.rest);
+                o.put("at", v.created);
+                StringBuilder sb = new StringBuilder();
+                for (String one : v.ids) {
+                    if (sb.length() > 0) {
+                        sb.append(',');
+                    }
+                    sb.append(one);
+                }
+                o.put("x", sb.toString());
+            } catch (Exception ignored) {
+            }
+            arr.put(o);
+        }
+        return arr;
+    }
+
+    // ---- 中断的训练：把进度留在本机，下次接着练 ----
+
+    /** 一次没做完的训练。只存动作 id 与秒数，恢复时重新绑定动作数据。 */
+    public static class Pending {
+        public int dayIndex;
+        public String title = "";
+        public String single;
+        /** 每一步的动作 id；休息步为空串。 */
+        public List<String> ids = new ArrayList<>();
+        public List<Integer> totals = new ArrayList<>();
+        public List<Integer> remains = new ArrayList<>();
+        /** 每一步已经练过的秒数。恢复后结算消耗要用，否则前段训练白练。 */
+        public List<Integer> spents = new ArrayList<>();
+        public int index;
+        public int elapsedSeconds;
+        public int rounds = 1;
+        public long savedAt;
+
+        public boolean valid() {
+            return !ids.isEmpty() && index >= 0 && index < ids.size();
+        }
+    }
+
+    /** 存档超过这个时间就当放弃了：放着一个多月前的半截训练，只会一直占着首页入口。 */
+    private static final long MAX_PENDING_AGE = 7L * 24 * 3600 * 1000;
+
+    public static Pending pending(Context c) {
+        String text = sp(c).getString(K_PENDING, "");
+        if (text == null || text.isEmpty()) {
+            return null;
+        }
+        try {
+            JSONObject o = new JSONObject(text);
+            Pending p = new Pending();
+            p.dayIndex = o.optInt("day", 0);
+            p.title = o.optString("title", "");
+            String single = o.optString("single", "");
+            p.single = single.isEmpty() ? null : single;
+            p.index = o.optInt("idx", 0);
+            p.elapsedSeconds = o.optInt("el", 0);
+            p.rounds = Math.max(1, o.optInt("r", 1));
+            p.savedAt = o.optLong("ts", 0);
+            if (p.savedAt > 0 && System.currentTimeMillis() - p.savedAt > MAX_PENDING_AGE) {
+                return null;
+            }
+            JSONArray steps = o.optJSONArray("steps");
+            for (int i = 0; steps != null && i < steps.length(); i++) {
+                JSONArray one = steps.optJSONArray(i);
+                if (one == null) {
+                    continue;
+                }
+                p.ids.add(one.optString(0, ""));
+                p.totals.add(one.optInt(1, 0));
+                p.remains.add(one.optInt(2, 0));
+                // 第 4 项是 1.8.1 才加的；更早的存档没有，按 0 处理
+                p.spents.add(one.optInt(3, 0));
+            }
+            return p.valid() ? p : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static void savePending(Context c, Pending p) {
+        if (p == null || !p.valid()) {
+            clearPending(c);
+            return;
+        }
+        JSONObject o = new JSONObject();
+        JSONArray steps = new JSONArray();
+        try {
+            for (int i = 0; i < p.ids.size(); i++) {
+                JSONArray one = new JSONArray();
+                one.put(p.ids.get(i));
+                one.put(i < p.totals.size() ? p.totals.get(i) : 0);
+                one.put(i < p.remains.size() ? p.remains.get(i) : 0);
+                one.put(i < p.spents.size() ? p.spents.get(i) : 0);
+                steps.put(one);
+            }
+            o.put("day", p.dayIndex);
+            o.put("title", p.title);
+            o.put("single", p.single == null ? "" : p.single);
+            o.put("idx", p.index);
+            o.put("el", p.elapsedSeconds);
+            o.put("r", p.rounds);
+            o.put("ts", System.currentTimeMillis());
+            o.put("steps", steps);
+        } catch (Exception ignored) {
+        }
+        sp(c).edit().putString(K_PENDING, o.toString()).apply();
+    }
+
+    public static void clearPending(Context c) {
+        sp(c).edit().remove(K_PENDING).apply();
+    }
+
+    // ---- 训练偏好 ----
     public static class WorkoutPrefs {
         public int prepSeconds = 3;
         /** 0 表示跟随计划。 */
@@ -550,7 +992,7 @@ public final class Store {
     }
 
     public static String dateOf(long ts) {
-        return new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date(ts));
+        return formatDay(ts);
     }
 
     /** 供同步模块组装记录用（构造器是包内可见）。 */
