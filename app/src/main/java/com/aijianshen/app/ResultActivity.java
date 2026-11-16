@@ -503,7 +503,7 @@ public class ResultActivity extends Activity {
         float kg = Store.latestWeightKg(this);
         float unit = Store.kgToDisplay(this, kg);
         if (kg > 0) {
-            weightValue.setText(String.format(Locale.US, "%.1f %s", unit, lb ? "lb" : "kg"));
+            weightValue.setText(Store.num(unit) + " " + (lb ? "lb" : "kg"));
         } else {
             weightValue.setText("--");
         }
@@ -515,8 +515,8 @@ public class ResultActivity extends Activity {
             max = max == 0 ? v : Math.max(max, v);
             min = min == 0 ? v : Math.min(min, v);
         }
-        weightMax.setText("最高 " + (max > 0 ? String.format(Locale.US, "%.1f", max) : "--"));
-        weightMin.setText("最低 " + (min > 0 ? String.format(Locale.US, "%.1f", min) : "--"));
+        weightMax.setText("最高 " + (max > 0 ? Store.num(max) : "--"));
+        weightMin.setText("最低 " + (min > 0 ? Store.num(min) : "--"));
         float bmi = Store.bmi(this);
         if (kg <= 0) {
             bmiText.setText("记录体重后，可以在这里看到 BMI。");

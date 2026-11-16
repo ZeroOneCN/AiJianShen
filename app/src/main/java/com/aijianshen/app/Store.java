@@ -1234,7 +1234,19 @@ public final class Store {
             }
             return ft + " 英尺 " + in + " 英寸";
         }
-        return Math.round(cm) + " cm";
+        return num(cm) + " cm";
+    }
+
+    /** 最多保留两位小数并去掉尾零：65 → "65"，65.3 → "65.3"，65.25 → "65.25"。 */
+    public static String num(float v) {
+        if (Math.abs(v - Math.round(v)) < 0.005f) {
+            return String.valueOf(Math.round(v));
+        }
+        String s = String.format(Locale.US, "%.2f", v);
+        if (s.endsWith("0")) {
+            s = s.substring(0, s.length() - 1);
+        }
+        return s;
     }
 
     public static float bmi(Context c) {

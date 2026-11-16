@@ -300,16 +300,15 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
 
     private void renderHeight() {
         float init = heightCm > 0 ? heightCm : 172f;
-        String shown = String.format(Locale.US, "%.0f", init);
-        TextView number = bigNumber(shown, "cm");
+        TextView number = bigNumber(Store.num(init), "cm");
         addBigNumber(number);
         heightCm = init;
 
         ValueRuler ruler = new ValueRuler(this);
-        ruler.configure(120, 220, 1, 1, 10, 12f, init);
+        ruler.configure(120, 220, 0.5f, 1, 10, 12f, init);
         ruler.setOnValueChanged(v -> {
-            heightCm = Math.round(v);
-            setNumberText(number, String.valueOf(Math.round(heightCm)));
+            heightCm = Math.round(v * 10) / 10f;
+            setNumberText(number, Store.num(heightCm));
         });
         addRuler(ruler);
 
@@ -454,7 +453,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
     /** 手动录入：刻度尺 + BMI 实时反馈。 */
     private void renderManualPanel() {
         float init = weightKg > 0 ? weightKg : 65f;
-        String shown = String.format(Locale.US, "%.1f", init);
+        String shown = Store.num(init);
         TextView number = bigNumber(shown, "kg");
         addBigNumber(number);
         weightKg = init;
@@ -463,7 +462,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         ruler.configure(30, 200, 0.1f, 0.5f, 5, 26f, init);
         ruler.setOnValueChanged(v -> {
             weightKg = Math.round(v * 10) / 10f;
-            setNumberText(number, String.format(Locale.US, "%.1f", weightKg));
+            setNumberText(number, Store.num(weightKg));
             refreshPreview();
         });
         addRuler(ruler);
@@ -513,7 +512,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
 
         if (weightKg > 0f) {
             TextView ok = new TextView(this);
-            ok.setText(String.format(Locale.US, "%.1f kg", weightKg)
+            ok.setText(Store.num(weightKg) + " kg"
                     + (impedance > 0
                     ? " · 阻抗 " + Math.round(impedance) + " Ω"
                     : " · 这次没有阻抗数据"));
@@ -742,7 +741,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         }
 
         row.addView(previewCell("体重",
-                String.format(Locale.US, "%.1f", weightKg), "kg", Ui.INK), cellLp(true));
+                Store.num(weightKg), "kg", Ui.INK), cellLp(true));
         row.addView(previewCell("BMI",
                 String.format(Locale.US, "%.1f", bmi), grade, color), cellLp(false));
 
@@ -869,7 +868,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
     @Override
     public void onLive(float kg) {
         if (scaleState != null && Math.abs(kg) > 3f) {
-            scaleState.setText(String.format(Locale.US, "读数中… %.1f kg，站稳别动", kg));
+            scaleState.setText("读数中… " + Store.num(kg) + " kg，站稳别动");
         }
     }
 
@@ -888,7 +887,7 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         }
         stopScale();
         connecting = false;
-        Toast.makeText(this, String.format(Locale.US, "已记录 %.1f kg", weightKg),
+        Toast.makeText(this, "已记录 " + Store.num(weightKg) + " kg",
                 Toast.LENGTH_SHORT).show();
         renderStep();
     }

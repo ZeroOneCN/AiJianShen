@@ -509,8 +509,7 @@ public class ReportActivity extends Activity {
         boolean lb = Store.isLb(this);
         float kg = Store.latestWeightKg(this);
         tvWeight.setText(kg > 0
-                ? String.format(Locale.US, "%.1f %s",
-                Store.kgToDisplay(this, kg), lb ? "lb" : "kg")
+                ? Store.num(Store.kgToDisplay(this, kg)) + " " + (lb ? "lb" : "kg")
                 : "--");
 
         List<Store.WeightEntry> list = Store.weights(this);
@@ -521,8 +520,8 @@ public class ReportActivity extends Activity {
             max = max == 0 ? v : Math.max(max, v);
             min = min == 0 ? v : Math.min(min, v);
         }
-        tvWeightMax.setText("最高 " + (max > 0 ? String.format(Locale.US, "%.1f", max) : "--"));
-        tvWeightMin.setText("最低 " + (min > 0 ? String.format(Locale.US, "%.1f", min) : "--"));
+        tvWeightMax.setText("最高 " + (max > 0 ? Store.num(max) : "--"));
+        tvWeightMin.setText("最低 " + (min > 0 ? Store.num(min) : "--"));
 
         float bmi = Store.bmi(this);
         if (kg <= 0) {

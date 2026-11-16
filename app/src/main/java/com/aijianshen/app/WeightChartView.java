@@ -114,7 +114,7 @@ public class WeightChartView extends View {
             float y = top + (bottom - top) * i / 3f;
             canvas.drawLine(left, y, right, y, grid);
             float v = max - span * i / 3f;
-            canvas.drawText(String.format(Locale.US, "%.1f", v), left - Ui.dp(getContext(), 6),
+            canvas.drawText(Store.num(v), left - Ui.dp(getContext(), 6),
                     y + Ui.dp(getContext(), 3.5f), text);
         }
 
@@ -151,7 +151,7 @@ public class WeightChartView extends View {
 
         if (n > 1) {
             // 最新值气泡（只有一个点时数值在卡片上方已经写了大字，不用再浮一个）
-            String last = String.format(Locale.US, "%.1f", values.get(n - 1));
+            String last = Store.num(values.get(n - 1));
             text.setTextAlign(Paint.Align.CENTER);
             float tw = text.measureText(last);
             float bw = tw + Ui.dp(getContext(), 20);

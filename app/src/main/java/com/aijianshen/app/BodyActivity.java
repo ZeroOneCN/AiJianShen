@@ -272,7 +272,8 @@ public class BodyActivity extends Activity {
         Ui.font(sub, 400);
         root.addView(sub);
 
-        EditText height = field("身高（cm）", String.valueOf(Math.round(Store.heightCm(this))));
+        EditText height = field("身高（cm）",
+                Store.heightCm(this) > 0 ? Store.num(Store.heightCm(this)) : "");
         root.addView(height, fieldLp());
         EditText age = field("年龄（岁）", Store.age(this) > 0
                 ? String.valueOf(Store.age(this)) : "");
@@ -535,11 +536,43 @@ public class BodyActivity extends Activity {
     private void renderMetrics(BodyComp.Result r) {
         metrics.removeAllViews();
         if (metricsCardView != null) {
-            metricsCardView.setVisibility(r.valid ? View.VISIBLE : View.GONE);
+            metricsCardView.setVisibility(View.VISIBLE);
         }
         if (!r.valid) {
+            if (metricsCardView != null) {
+                metricsCardView.setVisibility(View.GONE);
+            }
             return;
         }
+        // 没经过体脂秤：其余指标留空，给一张引导卡
+        if (r.fallbackImpedance) {
+            metrics.setPadding(0, Ui.dpi(this, 8), 0, Ui.dpi(this, 8));
+            TextView blank = new TextView(this);
+            blank.setText("肌肉量、骨量、水分等 14 项需要体脂秤测量。\n连接后这里会自动填满，手动记录的体重不受影响。");
+            blank.setTextColor(Ui.INK_SOFT);
+            blank.setTextSize(13);
+            blank.setLineSpacing(Ui.dp(this, 3), 1f);
+            blank.setGravity(Gravity.CENTER);
+            Ui.font(blank, 400);
+            metrics.addView(blank, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            TextView go = new TextView(this);
+            go.setText("连接体脂秤");
+            go.setTextColor(Color.WHITE);
+            go.setTextSize(14);
+            go.setGravity(Gravity.CENTER);
+            go.setBackground(Ui.ripple(this, Ui.gradientBluePill(this), 0x33FFFFFF));
+            Ui.font(go, 700);
+            LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 44));
+            glp.topMargin = Ui.dpi(this, 14);
+            metrics.addView(go, glp);
+            go.setOnClickListener(v ->
+                    startActivity(new android.content.Intent(this, ScaleActivity.class)));
+            return;
+        }
+        metrics.setPadding(0, 0, 0, 0);
         for (int i = 0; i < MORE.length; i++) {
             BodyComp.Item it = find(r, MORE[i][0]);
             LinearLayout row = new LinearLayout(this);
@@ -626,8 +659,8 @@ public class BodyActivity extends Activity {
             }
 
             TextView kg = new TextView(this);
-            kg.setText(String.format(Locale.US, "%.1f %s", Store.kgToDisplay(this, rec.kg),
-                    Store.isLb(this) ? "lb" : "kg"));
+            kg.setText(Store.num(Store.kgToDisplay(this, rec.kg)) + " " +
+                    (Store.isLb(this) ? "lb" : "kg"));
             kg.setTextColor(Ui.INK);
             kg.setTextSize(15);
             Ui.font(kg, 700);
@@ -662,7 +695,7 @@ public class BodyActivity extends Activity {
         float kg = rec != null ? rec.kg : Store.latestWeightKg(this);
 
         weightValue.setText(kg > 0
-                ? String.format(Locale.US, "%.1f", Store.kgToDisplay(this, kg)) : "--");
+                ? Store.num(Store.kgToDisplay(this, kg)) : "--");
         weightUnit.setText(Store.isLb(this) ? "lb" : "kg");
 
         BodyComp.Result r = compute(rec, kg);
@@ -679,7 +712,7 @@ public class BodyActivity extends Activity {
             weightMeta.setText("本机记录");
         }
         if (kg > 0 && r.valid && r.fallbackImpedance) {
-            weightMeta.append("\n没有阻抗数据，体成分是按参考阻抗估算的。");
+            weightMeta.append("\n体脂率按参考阻抗估算；肌肉量等其余指标需体脂秤测量。");
         }
 
         renderProfile();

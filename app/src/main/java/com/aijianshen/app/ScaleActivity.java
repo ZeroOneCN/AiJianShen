@@ -295,7 +295,7 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
         // 下秤后秤会归零并继续回传 0.0，按「没有读数」处理，免得界面上挂着 0.0 kg
         boolean empty = kg == null || Math.abs(kg) < 3f;
         String num = empty ? "--"
-                : String.format(Locale.US, "%.1f", Store.kgToDisplay(this, kg));
+                : Store.num(Store.kgToDisplay(this, kg));
         SpannableStringBuilder sb = new SpannableStringBuilder(num);
         int start = sb.length();
         sb.append("  ").append(Store.weightUnit(this));
@@ -338,7 +338,7 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
         BodyComp.Result r = BodyComp.calculate(kg, impedance,
                 Store.heightCm(this), Store.age(this), Store.isMale(this));
         StringBuilder sb = new StringBuilder();
-        sb.append("已保存 ").append(String.format(Locale.US, "%.1f", kg)).append(" kg");
+        sb.append("已保存 ").append(Store.num(kg)).append(" kg");
         if (impedance > 0) {
             sb.append(" · 阻抗 ").append(Math.round(impedance)).append(" Ω");
         }
@@ -352,7 +352,7 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
         savedText.setText(sb.toString());
         savedText.setVisibility(View.VISIBLE);
         hintText.setText(impedance > 0 ? "测量完成" : "这次没有阻抗数据，只记录了体重");
-        Toast.makeText(this, "已记录 " + String.format(Locale.US, "%.1f", kg) + " kg",
+        Toast.makeText(this, "已记录 " + Store.num(kg) + " kg",
                 Toast.LENGTH_SHORT).show();
     }
 

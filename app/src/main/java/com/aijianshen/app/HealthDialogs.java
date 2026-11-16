@@ -42,7 +42,7 @@ public final class HealthDialogs {
         input.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
         float latest = Store.latestWeightKg(a);
         if (latest > 0) {
-            input.setText(String.format(Locale.US, "%.1f", Store.kgToDisplay(a, latest)));
+            input.setText(Store.num(Store.kgToDisplay(a, latest)));
         }
         LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(a, 52));
@@ -120,7 +120,7 @@ public final class HealthDialogs {
             cm = input(a, "例如 170");
             cm.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
             if (current > 0) {
-                cm.setText(String.format(Locale.US, "%.0f", current));
+                cm.setText(Store.num(current));
             }
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(a, 52));

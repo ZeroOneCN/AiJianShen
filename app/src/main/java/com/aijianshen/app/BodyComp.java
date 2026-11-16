@@ -234,11 +234,20 @@ public final class BodyComp {
                 : 10 * weight + 6.25 * height - 5 * years - 161;
 
         String fatGrade = gradeFat(fatPct, male, age);
+        float[] fr = fatRange(male, age);
+
+        // 没有真实阻抗（手动录入体重）时，肌肉 / 水分等其余 16 项纯属编数字。
+        // 只保留算得相对靠谱的 BMI 与体脂率，其余由页面留空引导连接体脂秤。
+        if (fallback) {
+            List<Item> basic = new ArrayList<>(2);
+            basic.add(new Item("bmi", "BMI", "", f2(bmi), "", round2(bmi)));
+            basic.add(new Item("body_fat", "体脂率", "%", f2(fatPct), fatGrade, round2(fatPct)));
+            return new Result(true, true, basic);
+        }
         double[] mr = new double[2];
         muscleRange(male, height, mr);
         String muscleBand = band(muscleMass, mr[0], mr[1]);
         String muscleGrade = "偏高".equals(muscleBand) ? "优秀" : muscleBand;
-        float[] fr = fatRange(male, age);
         double[] br = new double[2];
         boneRange(male, weight, br);
 

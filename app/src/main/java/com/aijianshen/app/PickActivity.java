@@ -108,8 +108,9 @@ public class PickActivity extends Activity {
         });
 
         list = new ListView(this);
-        list.setDivider(null);
-        list.setDividerHeight(0);
+        // 卡片之间留 8dp 呼吸感：用透明 divider 当间隔，行本身还是圆角卡
+        list.setDivider(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        list.setDividerHeight(Ui.dpi(this, 8));
         list.setVerticalScrollBarEnabled(false);
         list.setClipToPadding(false);
         list.setPadding(side, Ui.dpi(this, 8), side, Ui.dpi(this, 8));
@@ -239,20 +240,34 @@ public class PickActivity extends Activity {
                 int p = Ui.dpi(PickActivity.this, 12);
                 row.setPadding(p, p, p, p);
 
+                // 动作预览图：与天详情页列表同款 56dp 圆角
+                PhotoView photo = new PhotoView(PickActivity.this);
+                photo.setRadiusDp(12f);
+                photo.setAnimated(false);
+                LinearLayout.LayoutParams php = new LinearLayout.LayoutParams(
+                        Ui.dpi(PickActivity.this, 56), Ui.dpi(PickActivity.this, 56));
+                row.addView(photo, php);
+
                 LinearLayout texts = new LinearLayout(PickActivity.this);
                 texts.setOrientation(LinearLayout.VERTICAL);
-                row.addView(texts, new LinearLayout.LayoutParams(0,
-                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                LinearLayout.LayoutParams txp = new LinearLayout.LayoutParams(0,
+                        ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                txp.leftMargin = Ui.dpi(PickActivity.this, 12);
+                row.addView(texts, txp);
                 TextView name = new TextView(PickActivity.this);
                 name.setTextSize(15);
                 name.setTextColor(Ui.INK);
-                Ui.font(name, 500);
+                name.setMaxLines(2);
+                name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                Ui.font(name, 600);
                 texts.addView(name, new ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.WRAP_CONTENT));
                 TextView sub = new TextView(PickActivity.this);
                 sub.setTextSize(11.5f);
                 sub.setTextColor(Ui.INK_SOFT);
+                sub.setMaxLines(1);
+                sub.setEllipsize(android.text.TextUtils.TruncateAt.END);
                 Ui.font(sub, 400);
                 texts.addView(sub);
 
@@ -265,14 +280,16 @@ public class PickActivity extends Activity {
                 tlp.leftMargin = Ui.dpi(PickActivity.this, 10);
                 row.addView(tick, tlp);
 
-                row.setTag(new View[]{name, sub, tick});
+                row.setTag(new Object[]{photo, name, sub, tick});
             }
 
             Exercise e = shown.get(position);
-            View[] views = (View[]) row.getTag();
-            TextView name = (TextView) views[0];
-            TextView sub = (TextView) views[1];
-            TextView tick = (TextView) views[2];
+            Object[] views = (Object[]) row.getTag();
+            PhotoView photo = (PhotoView) views[0];
+            TextView name = (TextView) views[1];
+            TextView sub = (TextView) views[2];
+            TextView tick = (TextView) views[3];
+            photo.bind(e);
             name.setText(e.name);
             StringBuilder sb = new StringBuilder(e.part == null ? "" : e.part);
             if (e.kind != null && !e.kind.isEmpty()) {

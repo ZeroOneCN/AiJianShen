@@ -169,7 +169,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
-                    android:background="@drawable/bg_soft_circle"
+                    android:background="@drawable/bg_soft_round"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingLeft="16dp"
