@@ -44,7 +44,7 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_search"
                         android:layout_width="23dp"
                         android:layout_height="23dp"
@@ -57,7 +57,7 @@
                     android:layout_height="40dp"
                     android:layout_marginLeft="6dp">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_history"
                         android:layout_width="23dp"
                         android:layout_height="23dp"
@@ -71,7 +71,7 @@
                 android:layout_height="208dp"
                 android:layout_marginTop="16dp">
 
-                <com.yuanlian.app.PhotoView
+                <com.aijianshen.app.PhotoView
                     android:id="@+id/hero_photo"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
@@ -152,7 +152,7 @@
                 android:layout_height="164dp"
                 android:layout_marginTop="14dp">
 
-                <com.yuanlian.app.PhotoView
+                <com.aijianshen.app.PhotoView
                     android:id="@+id/banner_photo"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />

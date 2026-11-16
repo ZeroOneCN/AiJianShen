@@ -10,7 +10,7 @@
     android:paddingRight="14dp"
     android:paddingBottom="10dp">
 
-    <com.yuanlian.app.PhotoView
+    <com.aijianshen.app.PhotoView
         android:id="@+id/photo"
         android:layout_width="78dp"
         android:layout_height="78dp" />

@@ -3,15 +3,15 @@ plugins {
 }
 
 android {
-    namespace = "com.yuanlian.app"
+    namespace = "com.aijianshen.app"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.yuanlian.app"
+        applicationId = "com.aijianshen.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.8.3"
+        versionCode = 12
+        versionName = "1.9"
     }
 
     androidResources {

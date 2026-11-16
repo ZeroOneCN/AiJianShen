@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>私人健身教练 · 真机截图</title>
+<title>爱健身 · 实测截图</title>
 <style>
   :root{
     --ink:#1C212C; --ink-soft:#888888; --bg:#F8F8F8; --surface:#fff;
@@ -35,19 +35,19 @@
 </head>
 <body>
 <header>
-  <div class="eyebrow">私人健身教练 · v1.6</div>
-  <h1>私人健身教练 · 实测截图</h1>
+  <div class="eyebrow">爱健身 · v1.9</div>
+  <h1>爱健身 · 实测截图</h1>
   <p class="sub">
-    以下均为 APK 安装后的实际运行截屏，非设计稿。02 / 07 / 09 / 11–14 取自真机
-    （vivo V2359A / Android 16 / 1080×2400），05 / 06 / 08 / 10 为模拟器 540×960，
-    其余为模拟器 1080×1920。<br>
-    这一版继续按样本 APK 的规格收口：底栏、图标语义、圆角与间距逐项对齐；动作插图先用
-    <code>boxes.json</code> 做主体框归一化，同一套缩放规则把「人物大小不一」拉平；
-    训练页顶栏独立成条，休息态改写为「第 r/R 轮 · 组间休息」。<br>
-    本版新增体重与身体成分：蓝牙直连体脂秤读体重与阻抗，18 项指标按 BIA 公式在本机算；
-    换手机时用同一 Wi-Fi 走「手机间同步」把训练记录与体重搬过去，全程没有云端。
+    以下均为 APK 安装后的实际运行截屏，非设计稿。引导页五张与 01 / 02 / 04 为模拟器
+    1080×1920；07 / 09 / 11–14 取自真机（vivo V2359A / Android 16 / 1080×2400）；
+    其余为模拟器 540×960。<br>
+    这一版把新用户的第一段路补上了：性别 → 年龄 → 身高 → 体重四步走完直接接定制计划，
+    体重既可以连蚂蚁阿福体脂秤读，也可以手动填，填完立刻显示 BMI 与分级。<br>
+    顺带改名换包：应用名「爱健身」，包名 <code>com.aijianshen.app</code>，本地存储同步迁移，
+    版本 1.9。
   </p>
   <div class="meta">
+    <div class="pill">首次引导四步</div>
     <div class="pill">定制一周计划</div>
     <div class="pill">1324 个动作</div>
     <div class="pill">10 个部位</div>
@@ -62,6 +62,30 @@
 </header>
 
 <div class="grid">
+  <figure>
+    <img src="screens/00-onboard-gender.png" alt="引导 · 性别">
+    <figcaption><b>引导 1 / 性别</b><span>两张全身剪影，男宽肩窄胯、女窄肩宽胯，
+      纯 Path 画的，不占素材；选中后描边转蓝并自动进入下一步</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/00-onboard-age.png" alt="引导 · 年龄">
+    <figcaption><b>引导 2 / 年龄</b><span>横向刻度尺，指针固定在中央，拖动时中间的数字跟着走，
+      松手吸附到整岁；带惯性，快划一下能跨十年</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/00-onboard-height.png" alt="引导 · 身高">
+    <figcaption><b>引导 3 / 身高</b><span>同一把刻度尺，120–220 cm，10 cm 一根长刻度并标数字</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/00-onboard-weight.png" alt="引导 · 体重来源">
+    <figcaption><b>引导 4 / 体重</b><span>先问有没有秤：有就引导到蓝牙测量，没有就手动填。
+      这四步的顺序不能换 —— 秤的 0xD0 档案包要身高年龄性别才能打开阻抗位</span></figcaption>
+  </figure>
+  <figure>
+    <img src="screens/00-onboard-manual.png" alt="引导 · 手动录入">
+    <figcaption><b>引导 4 / 手动录入</b><span>0.1 kg 精度的刻度尺，下面实时给出体重、
+      BMI 与分级；有阻抗时多一格体脂率。选完来源，两张卡收成一行，把空间让给刻度</span></figcaption>
+  </figure>
   <figure>
     <img src="screens/01-home.png" alt="首页">
     <figcaption><b>首页</b><span>本周目标、连续天数、今日安排与挑战卡；今天已练完时，
@@ -136,7 +160,7 @@
 
 <footer>
   构建：<code>./gradlew assembleDebug</code> · 工具链 Gradle 9.3.1 + AGP 9.1.0 + JDK 17 · minSdk 26 / targetSdk 36<br>
-  设计规格（圆角 / 配色 / 字号）量自样本 APK 资源，代码与本版布局为本项目原创。
+  包名 <code>com.aijianshen.app</code> · 版本 1.9（versionCode 12）。
 </footer>
 </body>
 </html>

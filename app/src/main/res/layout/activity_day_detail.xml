@@ -22,7 +22,7 @@
                 android:layout_height="300dp"
                 android:background="#F1F2F4">
 
-                <com.yuanlian.app.PhotoView
+                <com.aijianshen.app.PhotoView
                     android:id="@+id/hero_photo"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
@@ -35,7 +35,7 @@
                     android:layout_marginTop="14dp"
                     android:background="@drawable/bg_glass_circle">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_back"
                         android:layout_width="19dp"
                         android:layout_height="19dp"
@@ -51,7 +51,7 @@
                     android:layout_marginRight="16dp"
                     android:background="@drawable/bg_glass_circle">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_menu"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
@@ -93,7 +93,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_clock"
                         android:layout_width="19dp"
                         android:layout_height="19dp" />
@@ -106,7 +106,7 @@
                         android:textColor="@color/ink_muted"
                         android:textSize="15sp" />
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_flame"
                         android:layout_width="18dp"
                         android:layout_height="19dp"
@@ -177,7 +177,7 @@
                     android:paddingRight="16dp"
                     android:paddingBottom="16dp">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_tip"
                         android:layout_width="20dp"
                         android:layout_height="20dp" />

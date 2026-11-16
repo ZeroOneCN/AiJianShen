@@ -36,7 +36,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:includeFontPadding="false"
-                    android:text="私人健身教练"
+                    android:text="爱健身"
                     android:textColor="@color/ink"
                     android:textSize="26sp" />
 
@@ -49,7 +49,7 @@
                     android:paddingLeft="12dp"
                     android:paddingRight="12dp">
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_flame"
                         android:layout_width="15dp"
                         android:layout_height="17dp" />
@@ -74,7 +74,7 @@
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp">
 
-                <com.yuanlian.app.IconView
+                <com.aijianshen.app.IconView
                     android:id="@+id/icon_search"
                     android:layout_width="20dp"
                     android:layout_height="20dp" />
@@ -125,7 +125,7 @@
                         android:textColor="@color/accent"
                         android:textSize="20sp" />
 
-                    <com.yuanlian.app.IconView
+                    <com.aijianshen.app.IconView
                         android:id="@+id/icon_pencil"
                         android:layout_width="17dp"
                         android:layout_height="17dp"
@@ -156,7 +156,7 @@
                         android:layout_height="44dp"
                         android:background="@drawable/bg_avatar">
 
-                        <com.yuanlian.app.IconView
+                        <com.aijianshen.app.IconView
                             android:id="@+id/icon_coach"
                             android:layout_width="22dp"
                             android:layout_height="22dp"
