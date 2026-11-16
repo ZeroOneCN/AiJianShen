@@ -394,9 +394,4 @@ public class ScaleActivity extends Activity implements BleScale.Listener {
             scale.close();
         }
     }
-
-    @Override
-    public void onBackPressed() {
-        finish();
-    }
 }

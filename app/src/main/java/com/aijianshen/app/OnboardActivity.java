@@ -5,9 +5,12 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -87,6 +90,19 @@ public class OnboardActivity extends Activity implements BleScale.Listener {
         setContentView(R.layout.activity_onboard);
         Nav.chrome(this);
         Nav.insets(findViewById(R.id.root));
+
+        // Android 13+ 的预测性返回：返回键先退一步而不是直接退出
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    (OnBackInvokedCallback) () -> {
+                        if (step > STEP_GENDER) {
+                            back();
+                        } else {
+                            finish();
+                        }
+                    });
+        }
 
         body = findViewById(R.id.body);
         progress = findViewById(R.id.progress);

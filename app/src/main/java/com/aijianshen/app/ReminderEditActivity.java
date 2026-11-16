@@ -225,6 +225,11 @@ public class ReminderEditActivity extends Activity {
     }
 
     private void save() {
+        if (isNew && Store.reminders(this).size() >= ReminderScheduler.SLOTS) {
+            Toast.makeText(this, "最多同时开 " + ReminderScheduler.SLOTS + " 条提醒，先删一条",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (reminder.on && reminder.dayCount() == 0) {
             Toast.makeText(this, "至少选择一个重复日", Toast.LENGTH_SHORT).show();
             return;

@@ -252,9 +252,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.9.2" : v;
+            return v == null || v.isEmpty() ? "1.9.3" : v;
         } catch (Exception e) {
-            return "1.9.2";
+            return "1.9.3";
         }
     }
 

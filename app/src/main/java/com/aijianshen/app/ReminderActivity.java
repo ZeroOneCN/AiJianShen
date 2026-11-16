@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -15,6 +16,7 @@ import java.util.List;
 public class ReminderActivity extends Activity {
 
     private LinearLayout listBox;
+    private TextView addBtn;
     private LinearLayout body;
     private final int[] tileColors = {Ui.ORANGE, Ui.BLUE_TILE, Ui.PURPLE, Ui.TEAL, Ui.GREEN};
 
@@ -51,12 +53,22 @@ public class ReminderActivity extends Activity {
                 "提醒只保存在本机。系统省电策略较严时，通知可能延迟几分钟到达；"
                         + "关掉对应的提醒就会取消。");
 
-        TextView add = UiList.primary(this, "添加提醒");
+        addBtn = UiList.primary(this, "添加提醒");
+        TextView add = addBtn;
         root.addView(add, UiList.lp(this, 52, 8));
         ((LinearLayout.LayoutParams) add.getLayoutParams()).leftMargin = p;
         ((LinearLayout.LayoutParams) add.getLayoutParams()).rightMargin = p;
-        add.setOnClickListener(v -> startActivity(new Intent(this, ReminderEditActivity.class)));
+        add.setOnClickListener(v -> {
+            if (Store.reminders(this).size() >= MAX) {
+                Toast.makeText(this, "最多同时开 " + MAX + " 条提醒", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            startActivity(new Intent(this, ReminderEditActivity.class));
+        });
     }
+
+    /** 提醒最多同时排 MAX 条——闹钟槽位有限，超了会静默失效。 */
+    private static final int MAX = ReminderScheduler.SLOTS;
 
     /** 程序里 setChecked 也会触发监听，用这个开关挡住，避免无限递归。 */
     private boolean syncingToggle;
@@ -143,6 +155,12 @@ public class ReminderActivity extends Activity {
         tip.setPadding(0, Ui.dpi(this, 12), 0, 0);
         Ui.font(tip, 400);
         listBox.addView(tip);
+
+        if (addBtn != null) {
+            boolean full = list.size() >= MAX;
+            addBtn.setText(full ? "最多 " + MAX + " 条，删一条再加" : "添加提醒");
+            addBtn.setAlpha(full ? 0.55f : 1f);
+        }
     }
 
     private void edit(String id) {

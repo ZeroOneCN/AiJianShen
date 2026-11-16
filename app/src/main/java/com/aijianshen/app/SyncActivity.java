@@ -444,9 +444,4 @@ public class SyncActivity extends Activity implements LanServer.Listener {
             server.setListener(null);
         }
     }
-
-    @Override
-    public void onBackPressed() {
-        finish();
-    }
 }

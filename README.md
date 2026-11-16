@@ -6,16 +6,16 @@
 没有账号，没有云端，也没有弹窗广告。
 
 <p>
-<img src="screens/01-home.png?v=1.9.2" width="150" alt="首页">
-<img src="screens/15-challenges.png?v=1.9.2" width="150" alt="挑战">
-<img src="screens/07-library.png?v=1.9.2" width="150" alt="动作库">
-<img src="screens/09-workout.png?v=1.9.2" width="150" alt="训练">
-<img src="screens/11-result.png?v=1.9.2" width="150" alt="完成">
+<img src="screens/01-home.png?v=1.9.3" width="150" alt="首页">
+<img src="screens/15-challenges.png?v=1.9.3" width="150" alt="挑战">
+<img src="screens/07-library.png?v=1.9.3" width="150" alt="动作库">
+<img src="screens/09-workout.png?v=1.9.3" width="150" alt="训练">
+<img src="screens/11-result.png?v=1.9.3" width="150" alt="完成">
 </p>
 
 | | |
 |---|---|
-| 版本 | 1.9.2 |
+| 版本 | 1.9.3 |
 | 系统要求 | Android 8.0 及以上 |
 | 动作库 | 1324 个动作 · 10 个部位 |
 | 安装包 | 单文件约 168 MB，素材全部内置 |
@@ -123,6 +123,8 @@
 ---
 
 ## 更新记录
+
+**1.9.3** —— 体检式打磨：没接体脂秤就不再估算成分数据，数字精确到两位小数，挑战结束后可以重新开始或移除，提醒上限明确提示，细节读屏与返回手势更友好。
 
 **1.9.2** —— 新增挑战体系与桌面小部件，多条训练提醒，强度会按你练完的感受自动调档。
 

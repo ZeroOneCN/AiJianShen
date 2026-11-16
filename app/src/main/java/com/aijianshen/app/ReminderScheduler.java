@@ -19,7 +19,7 @@ public final class ReminderScheduler {
     private static final int NOTIFY_ID = 1201;
     private static final int ALARM_BASE = 1210;
     /** 闹钟槽位上限；条数超过这个数就不再排，避免 requestCode 失控。 */
-    private static final int SLOTS = 8;
+    public static final int SLOTS = 8;
     public static final String EXTRA_ID = "reminder_id";
 
     private ReminderScheduler() {

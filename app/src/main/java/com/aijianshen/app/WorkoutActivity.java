@@ -10,10 +10,13 @@ import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.View;
@@ -185,6 +188,13 @@ public class WorkoutActivity extends Activity {
         setContentView(R.layout.activity_workout);
         Nav.chrome(this);
         Nav.insets(findViewById(R.id.root));
+
+        // Android 13+：返回键弹出退出确认，防误触打断训练
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    (OnBackInvokedCallback) this::showExit);
+        }
 
         // 训练中途锁屏等于打断训练，屏幕一直亮到结束
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

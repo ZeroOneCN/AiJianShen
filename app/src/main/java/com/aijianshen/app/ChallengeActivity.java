@@ -114,11 +114,13 @@ public class ChallengeActivity extends Activity {
         texts.addView(spec);
 
         TextView state = new TextView(this);
-        state.setText(pr.done ? "完成" : "进行中");
+        boolean expired = !pr.done && pr.daysLeft <= 0;
+        state.setText(pr.done ? "完成" : (expired ? "已结束" : "进行中"));
         state.setTextSize(11);
         state.setGravity(Gravity.CENTER);
-        state.setTextColor(pr.done ? 0xFFFFFFFF : Ui.ACCENT);
-        state.setBackground(Ui.round(this, pr.done ? Ui.GREEN : Ui.ACCENT_SOFT, 12f));
+        state.setTextColor(pr.done ? 0xFFFFFFFF : (expired ? 0xFF8A93A0 : Ui.ACCENT));
+        state.setBackground(Ui.round(this,
+                pr.done ? Ui.GREEN : (expired ? 0xFFEFF1F4 : Ui.ACCENT_SOFT), 12f));
         Ui.font(state, 700);
         head.addView(state, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 56), Ui.dpi(this, 26)));
@@ -154,22 +156,25 @@ public class ChallengeActivity extends Activity {
         Ui.font(detail, 500);
         card.addView(detail);
 
+        // 到期未达标：主推「重新开始」，下面留一个安静的移除口
         TextView quit = new TextView(this);
-        quit.setText(pr.done ? "再来一次" : "放弃这个挑战");
-        quit.setTextColor(pr.done ? Ui.ACCENT : Ui.INK_SOFT);
+        boolean finished = pr.done || expired;
+        quit.setText(pr.done ? "再来一次" : (expired ? "重新开始" : "放弃这个挑战"));
+        quit.setTextColor(finished ? Ui.ACCENT : Ui.INK_SOFT);
         quit.setTextSize(13);
         quit.setGravity(Gravity.CENTER);
-        quit.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 20f), 0x14000000));
+        quit.setBackground(Ui.ripple(this,
+                Ui.round(this, finished ? Ui.ACCENT_SOFT : Ui.CARD_SOFT, 20f), 0x14000000));
         Ui.font(quit, 600);
         LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 40));
         qlp.leftMargin = p;
         qlp.rightMargin = p;
         qlp.topMargin = Ui.dpi(this, 14);
-        qlp.bottomMargin = p;
+        qlp.bottomMargin = expired ? 0 : p;
         card.addView(quit, qlp);
         quit.setOnClickListener(v -> {
-            if (pr.done) {
+            if (finished) {
                 start(d, false);
             } else {
                 InfoDialog.confirm(this, "放弃这个挑战？",
@@ -180,6 +185,23 @@ public class ChallengeActivity extends Activity {
                         });
             }
         });
+        if (expired) {
+            TextView remove = new TextView(this);
+            remove.setText("不想要了，移除这条记录");
+            remove.setTextColor(Ui.INK_MUTED);
+            remove.setTextSize(11.5f);
+            remove.setGravity(Gravity.CENTER);
+            remove.setPadding(0, Ui.dpi(this, 10), 0, p);
+            Ui.font(remove, 400);
+            card.addView(remove);
+            remove.setOnClickListener(v ->
+                    InfoDialog.confirm(this, "移除这条挑战记录？",
+                            "只清掉挑战进度，训练记录不受影响。",
+                            "移除", Ui.RED, () -> {
+                                Store.quitChallenge(this);
+                                render();
+                            }));
+        }
         return card;
     }
 

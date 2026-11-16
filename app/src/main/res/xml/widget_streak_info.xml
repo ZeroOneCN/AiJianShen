@@ -4,6 +4,7 @@
     android:initialLayout="@layout/widget_card"
     android:minHeight="110dp"
     android:minWidth="250dp"
+    android:previewImage="@drawable/widget_preview"
     android:previewLayout="@layout/widget_card"
     android:resizeMode="horizontal|vertical"
     android:targetCellHeight="2"

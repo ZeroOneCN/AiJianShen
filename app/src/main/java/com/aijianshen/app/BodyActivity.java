@@ -458,12 +458,31 @@ public class BodyActivity extends Activity {
             }
             row.addView(cell, clp);
 
+            // 名称和等级标签放同一行：各卡高度一致，标签不把卡撑高
+            LinearLayout nameRow = new LinearLayout(this);
+            nameRow.setOrientation(LinearLayout.HORIZONTAL);
+            nameRow.setGravity(Gravity.CENTER_VERTICAL);
+            cell.addView(nameRow, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
             TextView name = new TextView(this);
             name.setText(cells[i][1]);
             name.setTextColor(Ui.INK_SOFT);
             name.setTextSize(12);
             Ui.font(name, 500);
-            cell.addView(name);
+            nameRow.addView(name, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            if (it != null && !it.grade.isEmpty()) {
+                TextView grade = new TextView(this);
+                grade.setText(it.grade);
+                grade.setTextColor(BodyComp.gradeColor(it.grade));
+                grade.setTextSize(11);
+                grade.setPadding(Ui.dpi(this, 8), 0, 0, 0);
+                Ui.font(grade, 600);
+                nameRow.addView(grade, new LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            }
 
             LinearLayout valueRow = new LinearLayout(this);
             valueRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -487,16 +506,6 @@ public class BodyActivity extends Activity {
                 unit.setPadding(Ui.dpi(this, 4), 0, 0, Ui.dpi(this, 3));
                 Ui.font(unit, 500);
                 valueRow.addView(unit);
-            }
-
-            if (it != null && !it.grade.isEmpty()) {
-                TextView grade = new TextView(this);
-                grade.setText(it.grade);
-                grade.setTextColor(BodyComp.gradeColor(it.grade));
-                grade.setTextSize(11);
-                grade.setPadding(0, Ui.dpi(this, 5), 0, 0);
-                Ui.font(grade, 600);
-                cell.addView(grade);
             }
         }
     }
@@ -749,10 +758,5 @@ public class BodyActivity extends Activity {
     protected void onResume() {
         super.onResume();
         refresh();
-    }
-
-    @Override
-    public void onBackPressed() {
-        finish();
     }
 }

@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -62,6 +65,13 @@ public class ResultActivity extends Activity {
         super.onCreate(savedInstanceState);
         Data.init(this);
         Nav.chrome(this);
+
+        // Android 13+：返回键回首页而不是留在结果页
+        if (Build.VERSION.SDK_INT >= 33) {
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                    OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                    (OnBackInvokedCallback) this::goHome);
+        }
 
         dayIndex = getIntent().getIntExtra(EXTRA_DAY, Data.todayIndex(Calendar.getInstance()));
         single = getIntent().getStringExtra(EXTRA_SINGLE);

@@ -73,8 +73,43 @@ public class IconView extends View {
         if (this.icon != icon) {
             this.icon = icon;
             drawable = null;
+            // 给读屏软件一个可念的名字，别让它只会读「未标记」
+            String label = labelOf(icon);
+            if (label != null && getContentDescription() == null) {
+                setContentDescription(label);
+            }
         }
         invalidate();
+    }
+
+    private static String labelOf(int icon) {
+        switch (icon) {
+            case BACK: return "返回";
+            case SEARCH: return "搜索";
+            case REFRESH: return "同步";
+            case CLOSE: return "关闭";
+            case PLAY: return "播放";
+            case PAUSE: return "暂停";
+            case SKIP_NEXT: return "跳过";
+            case SKIP_PREV: return "上一个";
+            case ARROW: return "继续";
+            case CHEVRON: return "展开";
+            case PLUS: return "添加";
+            case PENCIL: return "编辑";
+            case TRASH: return "删除";
+            case SHARE: return "分享";
+            case CHECK: return "完成";
+            case INFO: return "说明";
+            case THUMB_UP: return "太轻松";
+            case THUMB_DOWN: return "太吃力";
+            case DUMBBELL: return "训练";
+            case FLAME: return "挑战";
+            case TROPHY: return "成就";
+            case TARGET: return "目标";
+            case BOLT: return "冲刺";
+            case STAR: return "收藏";
+            default: return null;
+        }
     }
 
     public void setColor(int color) {
