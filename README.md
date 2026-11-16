@@ -6,11 +6,11 @@
 没有账号，没有云端，也没有弹窗广告。
 
 <p>
-<img src="screens/01-home.png" width="150" alt="首页">
-<img src="screens/15-challenges.png" width="150" alt="挑战">
-<img src="screens/07-library.png" width="150" alt="动作库">
-<img src="screens/09-workout.png" width="150" alt="训练">
-<img src="screens/11-result.png" width="150" alt="完成">
+<img src="screens/01-home.png?v=1.9.2" width="150" alt="首页">
+<img src="screens/15-challenges.png?v=1.9.2" width="150" alt="挑战">
+<img src="screens/07-library.png?v=1.9.2" width="150" alt="动作库">
+<img src="screens/09-workout.png?v=1.9.2" width="150" alt="训练">
+<img src="screens/11-result.png?v=1.9.2" width="150" alt="完成">
 </p>
 
 | | |
