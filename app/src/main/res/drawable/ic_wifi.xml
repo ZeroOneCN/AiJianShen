@@ -7,24 +7,30 @@
     android:viewportWidth="24"
     android:viewportHeight="24">
     <group
-        android:scaleX="1.171"
-        android:scaleY="1.171"
-        android:translateX="-2.049"
-        android:translateY="-6.238">
+        android:scaleX="1.16"
+        android:scaleY="1.16"
+        android:translateX="-1.925"
+        android:translateY="-2.182">
         <path
-            android:pathData="M2.98 17.12A9.6 9.6 0 0 1 21.02 17.12"
+            android:pathData="M2.9 7.6A12.9 12.9 0 0 1 21.1 7.6"
             android:strokeColor="#FF1C212C"
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
-            android:strokeWidth="1.708" />
+            android:strokeWidth="1.723" />
         <path
-            android:pathData="M6.17 18.28A6.2 6.2 0 0 1 17.83 18.28"
+            android:pathData="M6.3 11.3A8.1 8.1 0 0 1 17.7 11.3"
             android:strokeColor="#FF1C212C"
             android:strokeLineCap="round"
             android:strokeLineJoin="round"
-            android:strokeWidth="1.708" />
+            android:strokeWidth="1.723" />
+        <path
+            android:pathData="M9.7 15.1A3.3 3.3 0 0 1 14.3 15.1"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.723" />
         <path
             android:fillColor="#FF1C212C"
-            android:pathData="M12 17.65A1.35 1.35 0 1 1 12 20.35A1.35 1.35 0 1 1 12 17.65Z" />
+            android:pathData="M12 17.1A1.75 1.75 0 0 1 13.75 18.85A1.75 1.75 0 0 1 12 20.6A1.75 1.75 0 0 1 10.25 18.85A1.75 1.75 0 0 1 12 17.1Z" />
     </group>
 </vector>

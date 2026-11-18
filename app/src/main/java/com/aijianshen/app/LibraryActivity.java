@@ -370,11 +370,11 @@ public class LibraryActivity extends Activity {
         Ui.font(close, 600);
         footer.addView(close, new LinearLayout.LayoutParams(0, Ui.dpi(this, 50), 1f));
 
-        // 收藏：星标亮起表示已收藏，动作库顶部可以只看收藏
+        // 收藏：书签亮起表示已收藏，动作库顶部可以只看收藏
         final FrameLayout favBtn = new FrameLayout(this);
         favBtn.setBackground(Ui.ripple(this, Ui.round(this, Ui.CARD_SOFT, 25f), 0x22000000));
         IconView favIcon = new IconView(this);
-        favIcon.setIcon(IconView.STAR);
+        favIcon.setIcon(IconView.BOOKMARK);
         favBtn.addView(favIcon, new FrameLayout.LayoutParams(
                 Ui.dpi(this, 22), Ui.dpi(this, 22), Gravity.CENTER));
         LinearLayout.LayoutParams favLp = new LinearLayout.LayoutParams(

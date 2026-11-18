@@ -25,6 +25,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -129,6 +130,7 @@ public class WorkoutActivity extends Activity {
     private boolean resultOpened;
     /** 休息中才显示的两个快捷按钮，避免和「暂停」抢位置。 */
     private LinearLayout restActions;
+    private PopupWindow topMenu;
 
     private AudioManager audio;
     private AudioFocusRequest focusRequest;
@@ -231,8 +233,9 @@ public class WorkoutActivity extends Activity {
         int glass = 0xF2FFFFFF;
         circle(findViewById(R.id.btn_back), glass, Ui.INK, IconView.BACK, R.id.icon_back);
         circle(findViewById(R.id.btn_more), glass, Ui.INK, IconView.MORE, R.id.icon_more);
-        circle(findViewById(R.id.btn_like), glass, Ui.INK_MUTED, IconView.STAR, R.id.icon_like);
-        circle(findViewById(R.id.btn_dislike), glass, Ui.INK_MUTED, IconView.REFRESH,
+        circle(findViewById(R.id.btn_like), Ui.CARD_SOFT, Ui.INK_MUTED, IconView.BOOKMARK,
+                R.id.icon_like);
+        circle(findViewById(R.id.btn_dislike), Ui.CARD_SOFT, Ui.INK, IconView.SWAP,
                 R.id.icon_dislike);
         circle(findViewById(R.id.btn_prev), Ui.CARD_SOFT, Ui.INK, IconView.SKIP_PREV,
                 R.id.icon_prev);
@@ -304,93 +307,72 @@ public class WorkoutActivity extends Activity {
         findViewById(R.id.btn_dislike).setOnClickListener(v -> replaceCurrent());
     }
 
-    /** 顶部「更多」：帮助、音乐、设置收进一个底部面板，顶栏只留一个入口，标题才放得正。 */
+    /** 顶部「更多」：真下拉，贴着按钮往下展开、右边缘对齐，手指不用跑到屏幕底部。 */
     private void showMoreMenu(View anchor) {
-        Dialog dialog = new Dialog(this);
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackground(Ui.round(this, Ui.SURFACE, 24f));
-        root.setPadding(Ui.dpi(this, 14), Ui.dpi(this, 18),
-                Ui.dpi(this, 14), Ui.dpi(this, 22));
+        int p = Ui.dpi(this, 6);
+        root.setPadding(p, p, p, p);
 
-        TextView head = new TextView(this);
-        head.setText("本次训练");
-        head.setTextColor(Ui.INK_SOFT);
-        head.setTextSize(12.5f);
-        Ui.font(head, 700);
-        LinearLayout.LayoutParams hlp = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        hlp.leftMargin = Ui.dpi(this, 10);
-        hlp.bottomMargin = Ui.dpi(this, 8);
-        root.addView(head, hlp);
-
-        root.addView(menuRow(IconView.INFO, "动作要领与帮助", () -> {
-            dialog.dismiss();
-            showHelp();
-        }));
         boolean playing = music != null && music.isPlaying();
-        root.addView(menuRow(IconView.MUSIC,
-                playing ? "背景音乐 · 播放中" : "背景音乐", () -> {
-                    dialog.dismiss();
-                    toggleMusic();
-                }));
-        root.addView(menuRow(IconView.SETTINGS, "训练设置", () -> {
-            dialog.dismiss();
-            startActivity(new Intent(this, WorkoutSettingsActivity.class));
-        }));
+        addDropRow(root, IconView.INFO, "动作要领与帮助", this::showHelp);
+        addDropRow(root, IconView.MUSIC, playing ? "背景音乐 · 播放中" : "背景音乐",
+                this::toggleMusic);
+        addDropRow(root, IconView.SETTINGS, "训练设置",
+                () -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
 
-        dialog.setContentView(root);
-        Window w = dialog.getWindow();
-        if (w != null) {
-            w.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-            w.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
-            WindowManager.LayoutParams lp = w.getAttributes();
-            lp.gravity = Gravity.BOTTOM;
-            lp.dimAmount = 0.38f;
-            w.setAttributes(lp);
-        }
-        dialog.show();
-        if (w != null) {
-            w.setLayout(WindowManager.LayoutParams.MATCH_PARENT,
-                    WindowManager.LayoutParams.WRAP_CONTENT);
+        PopupWindow pop = new PopupWindow(root,
+                Ui.dpi(this, 208), ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        // 页面本身就是白底，菜单必须自带白卡 + 一圈淡描边 + 投影，否则整块"浮"在页面上看不清
+        pop.setBackgroundDrawable(Ui.roundStroke(this, Ui.SURFACE, 16f, 0x1A000000));
+        pop.setOutsideTouchable(true);
+        pop.setElevation(Ui.dp(this, 10));
+        pop.setOnDismissListener(() -> topMenu = null);
+        topMenu = pop;
+        // 右对齐：菜单右边缘跟按钮右边缘齐，不会往屏幕外溢
+        pop.showAsDropDown(anchor, 0, Ui.dpi(this, 6), Gravity.END);
+    }
+
+    private void dismissTopMenu() {
+        if (topMenu != null) {
+            topMenu.dismiss();
+            topMenu = null;
         }
     }
 
-    private View menuRow(int icon, String label, Runnable action) {
+    /** 下拉菜单的一行：图标 + 文字，不放箭头——下拉不需要再暗示"进入下一层"。 */
+    private void addDropRow(LinearLayout parent, int icon, String label, Runnable action) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setBackground(Ui.ripple(this, Ui.round(this, 0x00000000, 14f), 0x14000000));
+        row.setBackground(Ui.ripple(this, Ui.round(this, 0x00000000, 11f), 0x14000000));
         row.setClickable(true);
-        int ph = Ui.dpi(this, 12);
-        int pv = Ui.dpi(this, 13);
-        row.setPadding(ph, pv, ph, pv);
-        row.setOnClickListener(v -> action.run());
+        int ph = Ui.dpi(this, 11);
+        row.setPadding(ph, 0, ph, 0);
+        row.setOnClickListener(v -> {
+            dismissTopMenu();
+            action.run();
+        });
 
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(Ui.INK);
         row.addView(ic, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 21), Ui.dpi(this, 21)));
+                Ui.dpi(this, 19), Ui.dpi(this, 19)));
 
         TextView tv = new TextView(this);
         tv.setText(label);
         tv.setTextColor(Ui.INK);
-        tv.setTextSize(15.5f);
+        tv.setTextSize(14.5f);
+        tv.setSingleLine(true);
         Ui.font(tv, 600);
-        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0,
-                ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        tlp.leftMargin = Ui.dpi(this, 13);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.leftMargin = Ui.dpi(this, 11);
         row.addView(tv, tlp);
 
-        IconView chev = new IconView(this);
-        chev.setIcon(IconView.CHEVRON);
-        chev.setColor(Ui.INK_SOFT);
-        row.addView(chev, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 16), Ui.dpi(this, 16)));
-        return row;
+        parent.addView(row, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 44)));
     }
 
     private void bindRestActions() {
@@ -422,20 +404,10 @@ public class WorkoutActivity extends Activity {
         if (restActions == null) {
             return;
         }
+        // 收藏 / 换一个是「练的时候用」，休息时整条换成加时与跳过，容器高度不变，页面不会抖
         restActions.setVisibility(visible ? View.VISIBLE : View.GONE);
-        // 休息浮层贴在演示区底部居中，会和收藏/换动作两个圆按钮叠在一起。
-        // 休息的十几秒里这两个按钮本来也用不上，索性淡出，浮层独占一行。
-        View like = findViewById(R.id.btn_like);
-        if (like != null && like.getParent() instanceof View) {
-            final View row = (View) like.getParent();
-            row.setVisibility(View.VISIBLE);
-            row.animate().alpha(visible ? 0f : 1f).setDuration(160)
-                    .withEndAction(() -> {
-                        if (visible) {
-                            row.setVisibility(View.INVISIBLE);
-                        }
-                    }).start();
-        }
+        findViewById(R.id.btn_like).setVisibility(visible ? View.GONE : View.VISIBLE);
+        findViewById(R.id.btn_dislike).setVisibility(visible ? View.GONE : View.VISIBLE);
     }
 
     private void circle(View view, int bg, int color, int icon, int iconId) {

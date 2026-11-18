@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 线性图标，24 视口 / 2 单位描边；已按包围盒归一化，图形铺满视口 -->
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <group
+        android:scaleX="1.2"
+        android:scaleY="1.2"
+        android:translateX="-2.4"
+        android:translateY="-2.4">
+        <path
+            android:pathData="M7.2 3.2H16.8A1.9 1.9 0 0 1 18.7 5.1V20.8L12 16.5L5.3 20.8V5.1A1.9 1.9 0 0 1 7.2 3.2Z"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.667" />
+    </group>
+</vector>
