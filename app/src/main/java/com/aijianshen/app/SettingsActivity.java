@@ -119,7 +119,9 @@ public class SettingsActivity extends Activity {
                 "保留定制计划与个人数据，只删除训练记录", true,
                 v -> confirmClear());
 
-        addRow(more, IconView.STAR, Ui.SLATE, "关于爱健身", "版本与说明", true,
+        // 「关于」用 i 圈，不用五角星：星标在应用里已经是「收藏」的语义，
+        // 同一个图形承担两种含义，用户会以为这是「给应用点赞」。
+        addRow(more, IconView.INFO, Ui.ACCENT, "关于爱健身", "版本与说明", true,
                 v -> aboutDialog());
     }
 

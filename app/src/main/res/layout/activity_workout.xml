@@ -102,32 +102,6 @@
                     android:layout_height="20dp"
                     android:layout_gravity="center" />
             </FrameLayout>
-
-            <LinearLayout
-                android:id="@+id/rest_actions"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                android:background="@drawable/bg_rest_actions"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="4dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:id="@+id/btn_more_rest"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="+15 秒" />
-
-                <TextView
-                    android:id="@+id/btn_skip_rest"
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_marginLeft="5dp"
-                    android:gravity="center"
-                    android:text="跳过休息" />
-            </LinearLayout>
         </LinearLayout>
     </FrameLayout>
 
@@ -179,15 +153,59 @@
                     android:textColor="@color/accent"
                     android:textSize="12sp" />
 
-                <!-- 动作名不设行数上限：长名字（如「单腿臀桥交替抬腿」）要完整显示 -->
-                <TextView
-                    android:id="@+id/tv_exercise"
+                <!-- 动作名不设行数上限：长名字（如「单腿臀桥交替抬腿」）要完整显示。
+                     休息时这一行右侧接「+15 秒 / 跳过休息」，和「缓一缓」并排，
+                     不再单独占一条、也不用把手指移到屏幕另一头。 -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:lineSpacingExtra="2dp"
-                    android:textColor="@color/ink"
-                    android:textSize="20sp" />
+                    android:gravity="center_vertical"
+                    android:minHeight="32dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_exercise"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="@color/ink"
+                        android:textSize="20sp" />
+
+                    <!-- 弹簧位：把右侧两个按钮顶到行尾，标题本身按内容取宽，
+                         不会被 weight 挤成一列竖排的字 -->
+                    <Space
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <LinearLayout
+                        android:id="@+id/rest_actions"
+                        android:layout_width="wrap_content"
+                        android:layout_height="30dp"
+                        android:layout_marginLeft="8dp"
+                        android:background="@drawable/bg_rest_actions"
+                        android:gravity="center"
+                        android:orientation="horizontal"
+                        android:padding="3dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:id="@+id/btn_more_rest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:text="+15 秒" />
+
+                        <TextView
+                            android:id="@+id/btn_skip_rest"
+                            android:layout_width="wrap_content"
+                            android:layout_height="match_parent"
+                            android:layout_marginLeft="4dp"
+                            android:gravity="center"
+                            android:text="跳过休息" />
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 

@@ -379,18 +379,22 @@ public class WorkoutActivity extends Activity {
         TextView more = restActions.findViewById(R.id.btn_more_rest);
         TextView skip = restActions.findViewById(R.id.btn_skip_rest);
         for (TextView tv : new TextView[]{more, skip}) {
-            tv.setTextSize(12.5f);
+            tv.setTextSize(12f);
             tv.setGravity(Gravity.CENTER);
-            int lr = Ui.dpi(this, 14);
-            int tb = Ui.dpi(this, 8);
-            tv.setPadding(lr, tb, lr, tb);
+            // 这两个按钮现在挂在「缓一缓」右侧的窄列里，横向内边距收窄才放得下两个
+            int lr = Ui.dpi(this, 9);
+            tv.setPadding(lr, 0, lr, 0);
             tv.setTextColor(Ui.GREEN);
             tv.setBackground(Ui.ripple(this, Ui.round(this, Ui.GREEN_SOFT, Ui.R_PILL),
                     0x22000000));
             Ui.font(tv, 600);
         }
-        more.setText("+" + REST_EXTRA + " 秒");
-        skip.setText("跳过休息");
+        // 文案压到最短：这一行右侧只剩约 100dp，「跳过休息」四个字放不下会溢出。
+        // 语义由上下文（正在休息）补足，无障碍读屏仍读完整说法。
+        more.setText("+" + REST_EXTRA + "秒");
+        more.setContentDescription("延长休息 " + REST_EXTRA + " 秒");
+        skip.setText("跳过");
+        skip.setContentDescription("跳过休息");
         // 跳过是主操作：实心绿胶囊；加时长是次操作，留浅底
         skip.setTextColor(Color.WHITE);
         skip.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.GREEN, Ui.R_PILL),
@@ -404,7 +408,7 @@ public class WorkoutActivity extends Activity {
         if (restActions == null) {
             return;
         }
-        // 收藏 / 换一个是「练的时候用」，休息时整条换成加时与跳过，容器高度不变，页面不会抖
+        // 加时 / 跳过挪到「缓一缓」右侧，收藏 / 换一个是「练的时候用」，休息时收起来
         restActions.setVisibility(visible ? View.VISIBLE : View.GONE);
         findViewById(R.id.btn_like).setVisibility(visible ? View.GONE : View.VISIBLE);
         findViewById(R.id.btn_dislike).setVisibility(visible ? View.GONE : View.VISIBLE);
