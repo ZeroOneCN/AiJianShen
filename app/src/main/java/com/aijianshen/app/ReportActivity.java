@@ -283,7 +283,7 @@ public class ReportActivity extends Activity {
         legend.addView(less, new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
-        int[] levels = {Ui.CARD_SOFT, 0xFFD9EDE4, 0xFF95C9B4, 0xFF4FA184, Ui.GREEN};
+        int[] levels = HeatmapView.LEVELS;
         for (int color : levels) {
             View sq = new View(this);
             sq.setBackground(Ui.round(this, color, 3f));

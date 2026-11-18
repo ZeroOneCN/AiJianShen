@@ -972,7 +972,7 @@ public class WorkoutActivity extends Activity {
         }
         IconView ic = btn.findViewById(R.id.icon_like);
         boolean on = s.exercise != null && Store.isFavorite(this, s.exercise.id);
-        ic.setColor(on ? Ui.ORANGE : Ui.INK_MUTED);
+        ic.setColor(on ? Ui.ACCENT : Ui.INK_MUTED);
     }
 
     /** 不喜欢这个动作：直接换一个，本周都按新动作。 */

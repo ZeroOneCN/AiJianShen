@@ -18,7 +18,7 @@ public class ReminderActivity extends Activity {
     private LinearLayout listBox;
     private TextView addBtn;
     private LinearLayout body;
-    private final int[] tileColors = {Ui.ORANGE, Ui.BLUE_TILE, Ui.PURPLE, Ui.TEAL, Ui.GREEN};
+    private final int[] tileColors = {Ui.ACCENT, Ui.ACCENT, Ui.ACCENT, Ui.ACCENT, Ui.ACCENT};
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

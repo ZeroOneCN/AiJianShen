@@ -75,21 +75,25 @@ public class HeatmapView extends View {
         }
     }
 
+    /** 热力图五档：全部由主色深浅展开，0 档是卡片灰。图例复用同一份。 */
+    public static final int[] LEVELS = {
+            Ui.CARD_SOFT, 0xFFDDE7FF, 0xFFA8C1FF, 0xFF5A86FF, Ui.ACCENT};
+
     /** 0 / 1–9 / 10–19 / 20–34 / 35+ 分钟，五档。 */
     private int colorFor(int m) {
         if (m <= 0) {
-            return Ui.CARD_SOFT;
+            return LEVELS[0];
         }
         if (m < 10) {
-            return 0xFFD9EDE4;
+            return LEVELS[1];
         }
         if (m < 20) {
-            return 0xFF95C9B4;
+            return LEVELS[2];
         }
         if (m < 35) {
-            return 0xFF4FA184;
+            return LEVELS[3];
         }
-        return Ui.GREEN;
+        return LEVELS[4];
     }
 
     @Override

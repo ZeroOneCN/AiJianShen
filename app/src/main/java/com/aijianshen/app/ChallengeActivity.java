@@ -120,7 +120,7 @@ public class ChallengeActivity extends Activity {
         state.setGravity(Gravity.CENTER);
         state.setTextColor(pr.done ? 0xFFFFFFFF : (expired ? 0xFF8A93A0 : Ui.ACCENT));
         state.setBackground(Ui.round(this,
-                pr.done ? Ui.GREEN : (expired ? 0xFFEFF1F4 : Ui.ACCENT_SOFT), 12f));
+                pr.done ? Ui.ACCENT : (expired ? 0xFFEFF1F4 : Ui.ACCENT_SOFT), 12f));
         Ui.font(state, 700);
         head.addView(state, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 56), Ui.dpi(this, 26)));

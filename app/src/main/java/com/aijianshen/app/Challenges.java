@@ -59,13 +59,13 @@ public final class Challenges {
 
     static {
         ALL.add(new Def("warm", "7 天热身", "先养成一周三次的节奏",
-                1, 3, Ui.ORANGE, IconView.BOLT));
+                1, 3, Ui.ACCENT, IconView.BOLT));
         ALL.add(new Def("habit", "21 天习惯", "三周之后，训练开始变成习惯",
-                3, 3, Ui.BLUE_TILE, IconView.FLAME));
+                3, 3, Ui.ACCENT, IconView.FLAME));
         ALL.add(new Def("build", "四周进阶", "一周四练，把训练量稳稳堆上去",
-                4, 4, Ui.PURPLE, IconView.TROPHY));
+                4, 4, Ui.ACCENT, IconView.TROPHY));
         ALL.add(new Def("core", "14 天核心", "两周核心，每天十分钟就够",
-                2, 5, Ui.GREEN, IconView.TARGET));
+                2, 5, Ui.ACCENT, IconView.TARGET));
     }
 
     public static List<Def> all() {

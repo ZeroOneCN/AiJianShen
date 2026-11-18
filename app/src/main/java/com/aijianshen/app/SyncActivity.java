@@ -111,7 +111,7 @@ public class SyncActivity extends Activity implements LanServer.Listener {
 
     private LinearLayout serverCard() {
         LinearLayout card = UiList.card(this);
-        UiList.Row row = UiList.row(this, card, IconView.WIFI, Ui.BLUE_TILE,
+        UiList.Row row = UiList.row(this, card, IconView.WIFI, Ui.ACCENT,
                 "本机同步服务", "开着才能被另一台手机读取", true, null,
                 (btn, checked) -> {
                     SyncPrefs.setServer(this, checked);

@@ -173,7 +173,7 @@ public class PlanActivity extends Activity {
             final int idx = i;
             addOptionCard(PlanProfile.LEVELS[i], subs[i],
                     i == 0 ? IconView.USER : i == 1 ? IconView.CHART : IconView.TROPHY,
-                    i == 0 ? Ui.GREEN : i == 1 ? Ui.ACCENT : Ui.PURPLE,
+                    Ui.ACCENT,
                     profile.level == i, v -> {
                         profile.level = idx;
                         renderStep();
@@ -231,7 +231,7 @@ public class PlanActivity extends Activity {
                 index = i;
             }
         }
-        addPicker(IconView.CALENDAR, Ui.BLUE_TILE,
+        addPicker(IconView.CALENDAR, Ui.ACCENT,
                 profile.days + " 天", "每周训练",
                 values.length, index, "偶尔", "更多",
                 daysHint(profile.days), i -> {
@@ -249,7 +249,7 @@ public class PlanActivity extends Activity {
                 index = i;
             }
         }
-        addPicker(IconView.CLOCK, Ui.ORANGE,
+        addPicker(IconView.CLOCK, Ui.ACCENT,
                 profile.minutes + " 分钟", "每次训练",
                 values.length, index, "短一点", "充足",
                 "按轮次凑到目标时长附近，不会硬拖时间。", i -> {
@@ -265,7 +265,7 @@ public class PlanActivity extends Activity {
         String[] subs = {"始终保留，不需要任何器械",
                 "家里常见的小器械", "单杠、双杠或长凳", "完整器械动作池"};
         int[] icons = {IconView.USER, IconView.DUMBBELL, IconView.RACK, IconView.TROPHY};
-        int[] colors = {Ui.GREEN, Ui.BLUE_TILE, Ui.ORANGE, Ui.PURPLE};
+        int[] colors = {Ui.ACCENT, Ui.ACCENT, Ui.ACCENT, Ui.ACCENT};
         for (int i = 0; i < PlanProfile.GEAR_OPTIONS.length; i++) {
             final int idx = i;
             boolean on = (profile.gearMask & bits[i]) != 0;
@@ -698,17 +698,9 @@ public class PlanActivity extends Activity {
         }
     }
 
+    /** 目标图标也统一主色：四个目标各一色只会让页面像色卡。 */
     private int goalColor(int goal) {
-        switch (goal) {
-            case 0:
-                return Ui.RED;
-            case 1:
-                return Ui.ACCENT;
-            case 2:
-                return Ui.GREEN;
-            default:
-                return Ui.TEAL;
-        }
+        return Ui.ACCENT;
     }
 
     private int focusIcon(int focus) {
@@ -728,20 +720,8 @@ public class PlanActivity extends Activity {
         }
     }
 
+    /** 部位图标统一主色：六个部位各配一个颜色只会让页面像调色板。 */
     private int focusColor(int focus) {
-        switch (focus) {
-            case 0:
-                return Ui.ACCENT;
-            case 1:
-                return Ui.ORANGE;
-            case 2:
-                return Ui.GREEN;
-            case 3:
-                return Ui.PURPLE;
-            case 4:
-                return Ui.TEAL;
-            default:
-                return Ui.RED;
-        }
+        return Ui.ACCENT;
     }
 }

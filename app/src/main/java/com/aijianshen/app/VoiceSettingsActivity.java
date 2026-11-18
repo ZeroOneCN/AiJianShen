@@ -38,7 +38,7 @@ public class VoiceSettingsActivity extends Activity {
         clp.rightMargin = Ui.dpi(this, 20);
         root.addView(card, clp);
 
-        UiList.row(this, card, IconView.SPEAKER, Ui.PURPLE, "语音口令",
+        UiList.row(this, card, IconView.SPEAKER, Ui.ACCENT, "语音口令",
                 "关闭后只保留提示音和振动", true, null,
                 (b, on) -> {
                     if (initializing) return;

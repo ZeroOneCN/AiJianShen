@@ -309,7 +309,7 @@ public class LibraryActivity extends Activity {
 
             IconView ic = new IconView(this);
             ic.setIcon(IconView.TROPHY);
-            ic.setColor(Ui.GREEN);
+            ic.setColor(Ui.ACCENT);
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(
                     Ui.dpi(this, 20), Ui.dpi(this, 20));
             ilp.rightMargin = Ui.dpi(this, 8);
@@ -317,7 +317,7 @@ public class LibraryActivity extends Activity {
 
             TextView t = new TextView(this);
             t.setText("个人纪录：单组最长 " + pr.bestSeconds + " 秒 · 累计 " + pr.sets + " 组");
-            t.setTextColor(Ui.GREEN);
+            t.setTextColor(Ui.ACCENT);
             t.setTextSize(12.5f);
             Ui.font(t, 600);
             rec.addView(t, new LinearLayout.LayoutParams(0,
@@ -427,7 +427,7 @@ public class LibraryActivity extends Activity {
 
     private void paintFav(IconView icon, Exercise e) {
         boolean on = Store.isFavorite(this, e.id);
-        icon.setColor(on ? Ui.ORANGE : Ui.INK_MUTED);
+        icon.setColor(on ? Ui.ACCENT : Ui.INK_MUTED);
         icon.setAlpha(on ? 1f : 0.75f);
     }
 

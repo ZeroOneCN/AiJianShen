@@ -64,7 +64,7 @@ public class ReminderEditActivity extends Activity {
         body.addView(card, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        toggleRow = UiList.row(this, card, IconView.CLOCK, Ui.ORANGE, "启用这条提醒",
+        toggleRow = UiList.row(this, card, IconView.CLOCK, Ui.ACCENT, "启用这条提醒",
                 "关闭后不再按这个时间通知", false, null,
                 (b, on) -> {
                     if (initializing) {
@@ -78,7 +78,7 @@ public class ReminderEditActivity extends Activity {
                 });
         toggleRow.toggle.setChecked(reminder.on);
 
-        timeRow = UiList.row(this, card, IconView.CLOCK, Ui.BLUE_TILE, "提醒时间",
+        timeRow = UiList.row(this, card, IconView.CLOCK, Ui.ACCENT, "提醒时间",
                 reminder.timeText(), true, v -> pickTime());
 
         TextView repeat = new TextView(this);
@@ -120,9 +120,9 @@ public class ReminderEditActivity extends Activity {
         LinearLayout noteCard = UiList.card(this);
         body.addView(noteCard, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        permissionRow = UiList.row(this, noteCard, IconView.INFO, Ui.SLATE, "通知权限",
+        permissionRow = UiList.row(this, noteCard, IconView.INFO, Ui.ACCENT, "通知权限",
                 notificationStatus(), false, v -> ensureNotificationPermission());
-        UiList.row(this, noteCard, IconView.BOLT, Ui.GREEN, "试发一条",
+        UiList.row(this, noteCard, IconView.BOLT, Ui.ACCENT, "试发一条",
                 "立即收到一条本地提醒，用来检查权限", true,
                 v -> {
                     ReminderScheduler.notifyNow(this);

@@ -199,7 +199,7 @@ public class DiscoverActivity extends Activity {
 
     private void renderBanner() {
         FrameLayout banner = findViewById(R.id.banner);
-        banner.setBackground(Ui.round(this, Ui.GREEN, 20f));
+        banner.setBackground(Ui.round(this, Ui.ACCENT, 20f));
         banner.setClipToOutline(true);
         View scrim = findViewById(R.id.banner_scrim);
         scrim.setBackground(Ui.gradientVertical(this, 0x00000000, 0xB8000000, 20f));

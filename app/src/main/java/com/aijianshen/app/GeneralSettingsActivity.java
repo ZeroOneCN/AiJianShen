@@ -45,11 +45,11 @@ public class GeneralSettingsActivity extends Activity {
         body.addView(health, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        weightUnitRow = UiList.row(this, health, IconView.CHART, Ui.BLUE_TILE,
+        weightUnitRow = UiList.row(this, health, IconView.CHART, Ui.ACCENT,
                 "重量单位", weightUnitText(), false, v -> chooseWeightUnit());
-        heightUnitRow = UiList.row(this, health, IconView.USER, Ui.TEAL,
+        heightUnitRow = UiList.row(this, health, IconView.USER, Ui.ACCENT,
                 "身高单位", heightUnitText(), false, v -> chooseHeightUnit());
-        heightRow = UiList.row(this, health, IconView.CHART, Ui.GREEN,
+        heightRow = UiList.row(this, health, IconView.CHART, Ui.ACCENT,
                 "身高", Store.formatHeight(this, Store.heightCm(this)), true,
                 v -> HealthDialogs.setHeight(this,
                         () -> heightRow.sub.setText(
@@ -59,10 +59,10 @@ public class GeneralSettingsActivity extends Activity {
         LinearLayout train = UiList.card(this);
         body.addView(train, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        reminderRow = UiList.row(this, train, IconView.CLOCK, Ui.ORANGE,
+        reminderRow = UiList.row(this, train, IconView.CLOCK, Ui.ACCENT,
                 "训练提醒", reminderText(), false,
                 v -> startActivity(new Intent(this, ReminderActivity.class)));
-        UiList.row(this, train, IconView.SETTINGS, Ui.PURPLE,
+        UiList.row(this, train, IconView.SETTINGS, Ui.ACCENT,
                 "训练设置", "倒计时、休息、声音、语音与音乐", true,
                 v -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
 
@@ -70,7 +70,7 @@ public class GeneralSettingsActivity extends Activity {
         LinearLayout other = UiList.card(this);
         body.addView(other, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        UiList.row(this, other, IconView.INFO, Ui.SLATE, "本机数据",
+        UiList.row(this, other, IconView.INFO, Ui.ACCENT, "本机数据",
                 "不联网、无账号、无云端同步", true,
                 v -> InfoDialog.show(this, "本机数据",
                         "训练记录、体重、提醒和动作替换都保存在本机 SharedPreferences。\n\n"

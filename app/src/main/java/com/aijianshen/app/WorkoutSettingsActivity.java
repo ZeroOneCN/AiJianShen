@@ -66,9 +66,9 @@ public class WorkoutSettingsActivity extends Activity {
         body.addView(rhythm, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        prepRow = UiList.row(this, rhythm, IconView.CLOCK, Ui.BLUE_TILE,
+        prepRow = UiList.row(this, rhythm, IconView.CLOCK, Ui.ACCENT,
                 "预备倒计时", prepText(), false, v -> choosePrep());
-        restRow = UiList.row(this, rhythm, IconView.CLOCK, Ui.TEAL,
+        restRow = UiList.row(this, rhythm, IconView.CLOCK, Ui.ACCENT,
                 "休息时长", restText(), true, v -> chooseRest());
 
         UiList.label(this, body, "声音与画面");
@@ -76,14 +76,14 @@ public class WorkoutSettingsActivity extends Activity {
         body.addView(media, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        UiList.row(this, media, IconView.BOLT, Ui.ORANGE, "提示音",
+        UiList.row(this, media, IconView.BOLT, Ui.ACCENT, "提示音",
                 "开始、倒计时和切换动作时播放", false, null,
                 (b, on) -> {
                     if (initializing) return;
                     prefs.sound = on;
                     prefs.save(this);
                 }).toggle.setChecked(prefs.sound);
-        UiList.row(this, media, IconView.REFRESH, Ui.GREEN, "振动",
+        UiList.row(this, media, IconView.REFRESH, Ui.ACCENT, "振动",
                 "休息与完成时轻振一下", false, null,
                 (b, on) -> {
                     if (initializing) return;
@@ -93,14 +93,14 @@ public class WorkoutSettingsActivity extends Activity {
                         WorkoutCues.vibrate(this, 40);
                     }
                 }).toggle.setChecked(prefs.vibrate);
-        UiList.row(this, media, IconView.SPEAKER, Ui.PURPLE, "语音口令",
+        UiList.row(this, media, IconView.SPEAKER, Ui.ACCENT, "语音口令",
                 "用系统 TTS 播报预备、休息和完成", false, null,
                 (b, on) -> {
                     if (initializing) return;
                     prefs.voice = on;
                     prefs.save(this);
                 }).toggle.setChecked(prefs.voice);
-        UiList.row(this, media, IconView.VIDEO, Ui.SLATE, "动态演示",
+        UiList.row(this, media, IconView.VIDEO, Ui.ACCENT, "动态演示",
                 "训练页播放动作动图；关闭后显示静态图", true, null,
                 (b, on) -> {
                     if (initializing) return;
@@ -122,9 +122,9 @@ public class WorkoutSettingsActivity extends Activity {
         LinearLayout music = UiList.card(this);
         body.addView(music, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        musicRow = UiList.row(this, music, IconView.MUSIC, Ui.ORANGE, "选择音乐",
+        musicRow = UiList.row(this, music, IconView.MUSIC, Ui.ACCENT, "选择音乐",
                 musicText(), false, v -> pickMusic());
-        UiList.row(this, music, IconView.PLAY, Ui.BLUE_TILE, "自动播放",
+        UiList.row(this, music, IconView.PLAY, Ui.ACCENT, "自动播放",
                 "进入训练页后自动开始播放", true, null,
                 (b, on) -> {
                     if (initializing) return;

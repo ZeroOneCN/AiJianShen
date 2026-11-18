@@ -96,12 +96,12 @@ public class MainActivity extends Activity {
 
         flameIcon = IconView.FLAME;
         LinearLayout chip = findViewById(R.id.streak_chip);
-        chip.setBackground(Ui.ripple(this, Ui.round(this, Ui.CREAM, Ui.R_PILL), 0x22000000));
+        chip.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT_SOFT, Ui.R_PILL), 0x22000000));
         IconView flame = findViewById(R.id.icon_flame);
         flame.setIcon(IconView.FLAME);
-        flame.setColor(Ui.RED);
+        flame.setColor(Ui.ACCENT);
         tvStreak = findViewById(R.id.tv_streak);
-        tvStreak.setTextColor(Ui.CREAM_INK);
+        tvStreak.setTextColor(Ui.ACCENT);
         Ui.font(tvStreak, 700);
         chip.setOnClickListener(v -> startActivity(new Intent(this, StreakActivity.class)));
     }
@@ -184,14 +184,14 @@ public class MainActivity extends Activity {
         box.addView(card);
 
         int tpl = Store.templates(this).size();
-        UiList.row(this, card, IconView.BOLT, Ui.ORANGE, "5 分钟微训练",
+        UiList.row(this, card, IconView.BOLT, Ui.ACCENT, "5 分钟微训练",
                 "随机 4 个徒手动作，一个动作 60 秒，不挑场地",
                 false, v -> startQuick());
-        UiList.row(this, card, IconView.DUMBBELL, Ui.PURPLE, "我的训练",
+        UiList.row(this, card, IconView.DUMBBELL, Ui.ACCENT, "我的训练",
                 tpl > 0 ? tpl + " 个自己编排的训练，点一下开练"
                         : "挑几个动作存成模板，以后一键开练", false,
                 v -> startActivity(new Intent(this, TemplatesActivity.class)));
-        UiList.row(this, card, IconView.TROPHY, Ui.GREEN, "成就",
+        UiList.row(this, card, IconView.TROPHY, Ui.ACCENT, "成就",
                 "已点亮 " + Achievements.earned(this) + " 枚，看看下一个差多少", true,
                 v -> startActivity(new Intent(this, AchievementsActivity.class)));
         box.setVisibility(View.VISIBLE);
@@ -300,7 +300,7 @@ public class MainActivity extends Activity {
             copy = "欢迎回来！今天安排的是「" + today.title + "」，跟着节奏来就好。";
             coachIcon.setIcon(IconView.DUMBBELL);
         }
-        coachIcon.setColor(resume ? Ui.GREEN : Ui.ACCENT);
+        coachIcon.setColor(Ui.ACCENT);
         tvCoach.setText(copy);
         coach.setOnClickListener(resume
                 ? v -> startActivity(new Intent(this, WorkoutActivity.class)
@@ -355,12 +355,12 @@ public class MainActivity extends Activity {
         boolean again = pr.done || pr.daysLeft == 0;
         TextView badge = new TextView(this);
         badge.setText(pr.done ? "已通关" : (again ? "已结束" : "进行中"));
-        badge.setTextColor(Ui.CREAM_INK);
+        badge.setTextColor(Color.WHITE);
         badge.setTextSize(11);
         badge.setIncludeFontPadding(false);
         badge.setGravity(Gravity.CENTER);
         badge.setPadding(Ui.dpi(this, 9), 0, Ui.dpi(this, 9), 0);
-        badge.setBackground(Ui.round(this, Ui.CREAM, 10f));
+        badge.setBackground(Ui.round(this, 0x33FFFFFF, 10f));
         Ui.font(badge, 700);
         content.addView(badge, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 20)));

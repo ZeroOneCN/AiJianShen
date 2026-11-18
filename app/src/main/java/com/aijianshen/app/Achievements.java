@@ -81,45 +81,45 @@ public final class Achievements {
 
         // 起步：第一次走到终点
         out.add(new Badge("起步", "动起来", "完成第一次训练", IconView.PLAY,
-                Ui.GREEN, 1, days, "次"));
+                Ui.ACCENT, 1, days, "次"));
         out.add(new Badge("起步", "三日不断", "连续训练 3 天", IconView.FLAME,
-                Ui.ORANGE, 3, best, "天"));
+                Ui.ACCENT, 3, best, "天"));
         out.add(new Badge("起步", "一周不断", "连续训练 7 天", IconView.FLAME,
-                Ui.RED, 7, best, "天"));
+                Ui.ACCENT, 7, best, "天"));
         out.add(new Badge("起步", "一月不断", "连续训练 30 天", IconView.TROPHY,
-                Ui.PURPLE, 30, best, "天"));
+                Ui.ACCENT, 30, best, "天"));
 
         // 坚持：训练日与满勤
         out.add(new Badge("坚持", "十个训练日", "累计 10 天完成训练", IconView.CALENDAR,
-                Ui.BLUE_TILE, 10, days, "天"));
+                Ui.ACCENT, 10, days, "天"));
         out.add(new Badge("坚持", "五十个训练日", "累计 50 天完成训练", IconView.CALENDAR,
-                Ui.SLATE, 50, days, "天"));
+                Ui.ACCENT, 50, days, "天"));
         out.add(new Badge("坚持", "满勤一周", "本周完成次数达到计划的 " + plan + " 次",
-                IconView.CHECK, Ui.GREEN, plan, week, "次"));
+                IconView.CHECK, Ui.ACCENT, plan, week, "次"));
         out.add(new Badge("坚持", "早起的人", "在早上 5–9 点完成一次训练", IconView.CLOCK,
-                Ui.ORANGE, 1, dawn ? 1 : 0, "次"));
+                Ui.ACCENT, 1, dawn ? 1 : 0, "次"));
         out.add(new Badge("坚持", "夜练者", "在晚上 21 点后完成一次训练", IconView.CLOCK,
-                Ui.PURPLE, 1, night ? 1 : 0, "次"));
+                Ui.ACCENT, 1, night ? 1 : 0, "次"));
 
         // 累计：时间与消耗
         out.add(new Badge("累计", "一百分钟", "累计训练 100 分钟", IconView.BOLT,
-                Ui.GREEN, 100, minutes, "分钟"));
+                Ui.ACCENT, 100, minutes, "分钟"));
         out.add(new Badge("累计", "十小时", "累计训练 600 分钟", IconView.BOLT,
-                Ui.BLUE_TILE, 600, minutes, "分钟"));
+                Ui.ACCENT, 600, minutes, "分钟"));
         out.add(new Badge("累计", "两千千卡", "累计消耗 2000 千卡", IconView.FLAME,
-                Ui.RED, 2000, kcal, "千卡"));
+                Ui.ACCENT, 2000, kcal, "千卡"));
         out.add(new Badge("累计", "五千千卡", "累计消耗 5000 千卡", IconView.FLAME,
-                Ui.ORANGE, 5000, kcal, "千卡"));
+                Ui.ACCENT, 5000, kcal, "千卡"));
 
         // 探索：动作广度与记录习惯
         out.add(new Badge("探索", "练过三十个动作", "不同动作各练一组", IconView.COMPASS,
-                Ui.TEAL, 30, moves, "个"));
+                Ui.ACCENT, 30, moves, "个"));
         out.add(new Badge("探索", "全身都练", "六个部位都练到过", IconView.TARGET,
-                Ui.PURPLE, 6, parts, "个部位"));
+                Ui.ACCENT, 6, parts, "个部位"));
         out.add(new Badge("探索", "收藏家", "收藏 10 个动作", IconView.STAR,
-                Ui.ORANGE, 10, favs, "个"));
+                Ui.ACCENT, 10, favs, "个"));
         out.add(new Badge("探索", "记录体重", "记录 10 次体重", IconView.SCALE,
-                Ui.BLUE_TILE, 10, weights, "次"));
+                Ui.ACCENT, 10, weights, "次"));
         return out;
     }
 

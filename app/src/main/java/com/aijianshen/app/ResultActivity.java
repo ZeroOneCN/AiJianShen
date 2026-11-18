@@ -172,12 +172,12 @@ public class ResultActivity extends Activity {
 
         TextView badge = new TextView(this);
         badge.setText(single == null ? "本次训练已完成" : "动作已完成");
-        badge.setTextColor(Ui.CREAM_INK);
+        badge.setTextColor(Ui.ACCENT);
         badge.setTextSize(11);
         badge.setGravity(Gravity.CENTER);
         badge.setPadding(Ui.dpi(this, 10), Ui.dpi(this, 4),
                 Ui.dpi(this, 10), Ui.dpi(this, 4));
-        badge.setBackground(Ui.round(this, Ui.CREAM, 11f));
+        badge.setBackground(Ui.round(this, Ui.ACCENT_SOFT, 11f));
         Ui.font(badge, 600);
         // 胶囊按文字收窄，右侧给角标圆留出位置，避免被压在下面
         LinearLayout.LayoutParams blp2 = new LinearLayout.LayoutParams(
@@ -542,7 +542,7 @@ public class ResultActivity extends Activity {
         LinearLayout card = UiList.card(this);
         int p = Ui.dpi(this, 14);
         card.setPadding(p, p, p, p);
-        UiList.Row row = UiList.row(this, card, IconView.CLOCK, Ui.ORANGE,
+        UiList.Row row = UiList.row(this, card, IconView.CLOCK, Ui.ACCENT,
                 "训练提醒", reminderText(), true,
                 v -> startActivity(new Intent(this, ReminderActivity.class)));
         reminderSub = row.sub;

@@ -48,10 +48,10 @@ public class SettingsActivity extends Activity {
         // 顶栏的同步入口：40dp 触控区 + 圆形底 + ripple，点开手机间同步页
         FrameLayout syncBtn = findViewById(R.id.btn_sync);
         syncBtn.setBackground(Ui.ripple(this,
-                Ui.round(this, 0xFFF1F3F6, 20f), 0x1A000000));
+                Ui.round(this, Ui.ACCENT_SOFT, 20f), 0x22000000));
         IconView syncIcon = findViewById(R.id.icon_sync);
         syncIcon.setIcon(IconView.REFRESH);
-        syncIcon.setColor(Ui.INK_MUTED);
+        syncIcon.setColor(Ui.ACCENT);
         syncBtn.setOnClickListener(v ->
                 startActivity(new Intent(this, SyncActivity.class)));
 
@@ -73,45 +73,45 @@ public class SettingsActivity extends Activity {
         LinearLayout more = findViewById(R.id.card_more);
         more.setBackground(Ui.round(this, Ui.SURFACE, 20f));
 
-        addRow(main, IconView.TARGET, Ui.GREEN, "定制计划",
+        addRow(main, IconView.TARGET, Ui.ACCENT, "定制计划",
                 "按目标、时间与器械重新排一周", false,
                 v -> startActivity(new Intent(this, PlanActivity.class)));
-        addRow(main, IconView.DUMBBELL, Ui.BLUE_TILE, "动作库",
+        addRow(main, IconView.DUMBBELL, Ui.ACCENT, "动作库",
                 Data.all().size() + " 个动作，可搜索、看要领", false,
                 v -> startActivity(new Intent(this, LibraryActivity.class)));
-        addRow(main, IconView.RACK, Ui.PURPLE, "我的训练",
+        addRow(main, IconView.RACK, Ui.ACCENT, "我的训练",
                 "自己挑动作存成模板，随时一键开练", false,
                 v -> startActivity(new Intent(this, TemplatesActivity.class)));
-        addRow(main, IconView.FLAME, Ui.ORANGE, "挑战",
+        addRow(main, IconView.FLAME, Ui.ACCENT, "挑战",
                 "7 天热身、21 天习惯……按周结算，自动算进度", false,
                 v -> startActivity(new Intent(this, ChallengeActivity.class)));
-        addRow(main, IconView.TROPHY, Ui.GREEN, "成就",
+        addRow(main, IconView.TROPHY, Ui.ACCENT, "成就",
                 "已点亮 " + Achievements.earned(this) + " 枚徽章", false,
                 v -> startActivity(new Intent(this, AchievementsActivity.class)));
-        addRow(main, IconView.SLIDERS, Ui.ORANGE, "训练设置",
+        addRow(main, IconView.SLIDERS, Ui.ACCENT, "训练设置",
                 "预备、休息、语音、音乐与提示音", false,
                 v -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
-        addRow(main, IconView.SETTINGS, Ui.SLATE, "通用设置",
+        addRow(main, IconView.SETTINGS, Ui.ACCENT, "通用设置",
                 "体重单位、身高与提醒", false,
                 v -> startActivity(new Intent(this, GeneralSettingsActivity.class)));
-        addRow(main, IconView.SPEAKER, Ui.PURPLE, "语音播报",
+        addRow(main, IconView.SPEAKER, Ui.ACCENT, "语音播报",
                 "使用系统中文语音，可试听", false,
                 v -> startActivity(new Intent(this, VoiceSettingsActivity.class)));
-        addRow(main, IconView.CLOCK, Ui.RED, "训练提醒",
+        addRow(main, IconView.CLOCK, Ui.ACCENT, "训练提醒",
                 "按固定时间发本地通知", false,
                 v -> startActivity(new Intent(this, ReminderActivity.class)));
-        addRow(main, IconView.WIFI, Ui.BLUE_TILE, "手机间同步",
+        addRow(main, IconView.WIFI, Ui.ACCENT, "手机间同步",
                 "换手机时把训练与体重数据搬过去", false,
                 v -> startActivity(new Intent(this, SyncActivity.class)));
-        addRow(main, IconView.SHARE, Ui.TEAL, "导出备份",
+        addRow(main, IconView.SHARE, Ui.ACCENT, "导出备份",
                 "把全部记录写成一个 JSON 文件", false, v -> exportData());
-        addRow(main, IconView.REFRESH, Ui.SLATE, "从备份恢复",
+        addRow(main, IconView.REFRESH, Ui.ACCENT, "从备份恢复",
                 "读取 JSON 文件，按并集合并，不会覆盖本机记录", false,
                 v -> importData());
-        addRow(main, IconView.SCALE, Ui.BLUE_TILE, "连接体脂秤",
+        addRow(main, IconView.SCALE, Ui.ACCENT, "连接体脂秤",
                 "蓝牙直连，读体重与体脂率", false,
                 v -> startActivity(new Intent(this, ScaleActivity.class)));
-        addRow(main, IconView.SHIELD, Ui.TEAL, "数据与隐私",
+        addRow(main, IconView.SHIELD, Ui.ACCENT, "数据与隐私",
                 "本机存储，网络仅用于手机间同步", false,
                 v -> info("数据与隐私",
                         "训练记录、体重、身高、计划条件与训练偏好只保存在本机，没有账号体系，也不上传到任何服务器。\n\n蓝牙只用于连接你自己的体脂秤，读取重量与阻抗；体成分由本机按 BIA 公式估算。\n\n手机间同步是可选项：只有你主动开启同步服务或填写对方地址时，应用才会在同一 Wi-Fi 下与另一台手机交换数据；平时不发起任何网络请求。\n\n训练提醒使用系统本地通知，不需要联网，也不会读取联系人。\n\n卸载应用或在下方清除记录后，数据会被删除。"));
