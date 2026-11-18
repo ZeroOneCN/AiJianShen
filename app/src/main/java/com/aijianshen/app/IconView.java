@@ -56,6 +56,7 @@ public class IconView extends View {
     public static final int RACK = 42;
     public static final int WIFI = 43;
     public static final int SCALE = 44;
+    public static final int MORE = 45;
 
     private int icon = SEARCH;
     private int color = Ui.INK;
@@ -108,6 +109,7 @@ public class IconView extends View {
             case TARGET: return "目标";
             case BOLT: return "冲刺";
             case STAR: return "收藏";
+            case MORE: return "更多";
             default: return null;
         }
     }
@@ -190,6 +192,7 @@ public class IconView extends View {
             case RACK: return R.drawable.ic_rack;
             case WIFI: return R.drawable.ic_wifi;
             case SCALE: return R.drawable.ic_scale;
+            case MORE: return R.drawable.ic_more;
             case SEARCH:
             default: return R.drawable.ic_search;
         }

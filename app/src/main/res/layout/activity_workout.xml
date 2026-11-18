@@ -6,21 +6,21 @@
     android:background="@color/surface"
     android:orientation="vertical">
 
-    <!-- 顶栏独立成一行：演示图是白底，压在上面会糊成一团 -->
+    <!-- 顶栏独立成一行：演示图是白底，压在上面会糊成一团。
+         左右各留一个 40dp 槽位，标题才能真正居中；右侧三个入口收进「更多」。 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="44dp"
         android:layout_marginTop="4dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingLeft="22dp"
+        android:paddingLeft="16dp"
         android:paddingRight="16dp">
 
         <FrameLayout
             android:id="@+id/btn_back"
             android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginLeft="-6dp">
+            android:layout_height="40dp">
 
             <com.aijianshen.app.IconView
                 android:id="@+id/icon_back"
@@ -41,41 +41,14 @@
             android:textSize="15sp" />
 
         <FrameLayout
-            android:id="@+id/btn_help"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginLeft="8dp">
+            android:id="@+id/btn_more"
+            android:layout_width="40dp"
+            android:layout_height="40dp">
 
             <com.aijianshen.app.IconView
-                android:id="@+id/icon_help"
-                android:layout_width="19dp"
-                android:layout_height="19dp"
-                android:layout_gravity="center" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/btn_music"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginLeft="8dp">
-
-            <com.aijianshen.app.IconView
-                android:id="@+id/icon_music"
-                android:layout_width="19dp"
-                android:layout_height="19dp"
-                android:layout_gravity="center" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/btn_settings"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginLeft="8dp">
-
-            <com.aijianshen.app.IconView
-                android:id="@+id/icon_settings"
-                android:layout_width="19dp"
-                android:layout_height="19dp"
+                android:id="@+id/icon_more"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
                 android:layout_gravity="center" />
         </FrameLayout>
     </LinearLayout>
@@ -126,6 +99,34 @@
                     android:layout_gravity="center" />
             </FrameLayout>
         </LinearLayout>
+
+        <!-- 休息时才出现：浮在演示区底部，不参与下方 sheet 的高度计算，
+             否则一显示就把整页顶高，进度环和动作图会跳一下。 -->
+        <LinearLayout
+            android:id="@+id/rest_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bg_rest_actions"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:padding="5dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btn_more_rest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+15 秒" />
+
+            <TextView
+                android:id="@+id/btn_skip_rest"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dp"
+                android:text="跳过休息" />
+        </LinearLayout>
     </FrameLayout>
 
     <LinearLayout
@@ -146,24 +147,24 @@
             android:includeFontPadding="false"
             android:text="预备开始"
             android:textColor="@color/accent"
-            android:textSize="32sp" />
+            android:textSize="30sp" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <com.aijianshen.app.TimerRingView
                 android:id="@+id/ring"
-                android:layout_width="136dp"
-                android:layout_height="136dp" />
+                android:layout_width="124dp"
+                android:layout_height="124dp" />
 
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginLeft="18dp"
+                android:layout_marginLeft="16dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
 
@@ -176,64 +177,39 @@
                     android:textColor="@color/accent"
                     android:textSize="12sp" />
 
+                <!-- 动作名不设行数上限：长名字（如「单腿臀桥交替抬腿」）要完整显示 -->
                 <TextView
                     android:id="@+id/tv_exercise"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="end"
-                    android:maxLines="2"
+                    android:layout_marginTop="3dp"
+                    android:lineSpacingExtra="2dp"
                     android:textColor="@color/ink"
-                    android:textSize="21sp" />
-
-                <TextView
-                    android:id="@+id/tv_tip"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="7dp"
-                    android:ellipsize="end"
-                    android:lineSpacingExtra="3dp"
-                    android:maxLines="3"
-                    android:textColor="@color/ink_soft"
-                    android:textSize="13sp" />
+                    android:textSize="20sp" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 休息时才出现：多歇 15 秒 / 直接进入下一个动作 -->
+        <!-- 提示整行铺满，同样不限行数：要领要读完，不能半句就省略号 -->
+        <TextView
+            android:id="@+id/tv_tip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="3dp"
+            android:textColor="@color/ink_soft"
+            android:textSize="12.5sp" />
+
         <LinearLayout
-            android:id="@+id/rest_actions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:gravity="center"
-            android:orientation="horizontal"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/btn_more_rest"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="+15 秒" />
-
-            <TextView
-                android:id="@+id/btn_skip_rest"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="10dp"
-                android:text="跳过休息" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <FrameLayout
                 android:id="@+id/btn_prev"
-                android:layout_width="50dp"
-                android:layout_height="50dp">
+                android:layout_width="48dp"
+                android:layout_height="48dp">
 
                 <com.aijianshen.app.IconView
                     android:id="@+id/icon_prev"
@@ -245,7 +221,7 @@
             <LinearLayout
                 android:id="@+id/btn_toggle"
                 android:layout_width="0dp"
-                android:layout_height="58dp"
+                android:layout_height="54dp"
                 android:layout_marginLeft="10dp"
                 android:layout_marginRight="10dp"
                 android:layout_weight="1"
@@ -269,8 +245,8 @@
 
             <FrameLayout
                 android:id="@+id/btn_skip"
-                android:layout_width="50dp"
-                android:layout_height="50dp">
+                android:layout_width="48dp"
+                android:layout_height="48dp">
 
                 <com.aijianshen.app.IconView
                     android:id="@+id/icon_next"

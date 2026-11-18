@@ -119,8 +119,6 @@ public class SettingsActivity extends Activity {
                 "保留定制计划与个人数据，只删除训练记录", true,
                 v -> confirmClear());
 
-        addRow(more, IconView.SHARE, Ui.SLATE, "分享给朋友", null, false,
-                v -> share());
         addRow(more, IconView.STAR, Ui.SLATE, "关于爱健身", "版本与说明", true,
                 v -> aboutDialog());
     }
@@ -192,12 +190,34 @@ public class SettingsActivity extends Activity {
         aboutRow(facts, IconView.WIFI, "不联网，同步走局域网");
         aboutRow(facts, IconView.SHARE, "随时可导出备份带走");
 
+        // 更新说明：产品页该有的那一块，别让人只在应用商店里才知道改了什么
+        LinearLayout note = new LinearLayout(this);
+        note.setOrientation(LinearLayout.VERTICAL);
+        note.setBackground(Ui.round(this, Ui.ACCENT_SOFT, 14f));
+        int np = Ui.dpi(this, 14);
+        note.setPadding(np, np, np, Ui.dpi(this, 12));
+        LinearLayout.LayoutParams nlp2 = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        nlp2.topMargin = Ui.dpi(this, 4);
+        root.addView(note, nlp2);
+
+        TextView noteTitle = new TextView(this);
+        noteTitle.setText(versionName() + " 更新");
+        noteTitle.setTextColor(Ui.ACCENT);
+        noteTitle.setTextSize(13);
+        Ui.font(noteTitle, 700);
+        note.addView(noteTitle);
+
+        updateLine(note, "动作名称与要领完整显示，不再截断");
+        updateLine(note, "图标重新绘制，图形更饱满清晰");
+        updateLine(note, "休息时可快捷加时、跳过，页面不再跳动");
+
         TextView ok = new TextView(this);
         ok.setText("知道了");
         ok.setTextColor(Color.WHITE);
         ok.setTextSize(15);
         ok.setGravity(Gravity.CENTER);
-        ok.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, 23f), 0x33FFFFFF));
+        ok.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.ACCENT, 23f), 0x33FFFFFF));
         Ui.font(ok, 700);
         LinearLayout.LayoutParams olp = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, Ui.dpi(this, 46));
@@ -219,6 +239,20 @@ public class SettingsActivity extends Activity {
             w.setLayout(getResources().getDisplayMetrics().widthPixels - Ui.dpi(this, 48),
                     ViewGroup.LayoutParams.WRAP_CONTENT);
         }
+    }
+
+    /** 更新说明里的一行小字，用圆点起头，不加粗。 */
+    private void updateLine(LinearLayout parent, String text) {
+        TextView tv = new TextView(this);
+        tv.setText("· " + text);
+        tv.setTextColor(Ui.INK_MUTED);
+        tv.setTextSize(12.5f);
+        tv.setLineSpacing(Ui.dp(this, 2), 1f);
+        Ui.font(tv, 400);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = Ui.dpi(this, 5);
+        parent.addView(tv, lp);
     }
 
     private void aboutRow(LinearLayout parent, int icon, String text) {
@@ -252,9 +286,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.9.3" : v;
+            return v == null || v.isEmpty() ? "1.9.5" : v;
         } catch (Exception e) {
-            return "1.9.3";
+            return "1.9.5";
         }
     }
 
@@ -332,14 +366,6 @@ public class SettingsActivity extends Activity {
             dlp.leftMargin = Ui.dpi(this, 68);
             card.addView(divider, dlp);
         }
-    }
-
-    private void share() {
-        Intent send = new Intent(Intent.ACTION_SEND);
-        send.setType("text/plain");
-        send.putExtra(Intent.EXTRA_TEXT,
-                "我在用爱健身：一个纯本地、不联网的徒手训练应用。动作库加一周定制计划，练完只记在本机。");
-        startActivity(Intent.createChooser(send, "分享爱健身"));
     }
 
     private void confirmClear() {
@@ -499,7 +525,7 @@ public class SettingsActivity extends Activity {
         ok.setTextColor(Color.WHITE);
         ok.setTextSize(15);
         ok.setGravity(Gravity.CENTER);
-        ok.setBackground(Ui.ripple(this, Ui.round(this, primaryColor, 24f), 0x33FFFFFF));
+        ok.setBackground(Ui.ripple(this, Ui.gradient(this, primaryColor, 24f), 0x33FFFFFF));
         Ui.font(ok, 700);
         row.addView(ok, new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1f));

@@ -350,7 +350,7 @@ public class TemplatesActivity extends Activity {
         ok.setTextColor(Color.WHITE);
         ok.setTextSize(15);
         ok.setGravity(Gravity.CENTER);
-        ok.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, 24f), 0x33FFFFFF));
+        ok.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.ACCENT, 24f), 0x33FFFFFF));
         Ui.font(ok, 700);
         row.addView(ok, new LinearLayout.LayoutParams(0,
                 ViewGroup.LayoutParams.MATCH_PARENT, 1f));

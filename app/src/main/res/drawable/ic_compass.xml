@@ -1,17 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 线性图标，24 视口 / 2 单位描边 -->
+<!-- 线性图标，24 视口 / 2 单位描边；已按包围盒归一化，图形铺满视口 -->
+
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:pathData="M12 3.3A8.7 8.7 0 1 1 12 20.7A8.7 8.7 0 1 1 12 3.3Z"
-        android:strokeColor="#FF1C212C"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2" />
-    <path
-        android:fillColor="#FF1C212C"
-        android:pathData="M16.1 7.9L13.2 13.2 7.9 16.1 10.8 10.8Z" />
+    <group
+        android:scaleX="1.214"
+        android:scaleY="1.214"
+        android:translateX="-2.566"
+        android:translateY="-2.566">
+        <path
+            android:pathData="M12 3.3A8.7 8.7 0 1 1 12 20.7A8.7 8.7 0 1 1 12 3.3Z"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.648" />
+        <path
+            android:fillColor="#FF1C212C"
+            android:pathData="M16.1 7.9L13.2 13.2 7.9 16.1 10.8 10.8Z" />
+    </group>
 </vector>

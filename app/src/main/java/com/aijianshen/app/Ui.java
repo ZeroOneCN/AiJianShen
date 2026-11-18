@@ -123,14 +123,9 @@ public final class Ui {
         return d;
     }
 
-    /** 主色渐变胶囊，用于主行动按钮：横向 0°，浅端在左。 */
+    /** 主色渐变胶囊，用于主行动按钮：对角渐变，左上更亮，像有光打过来。 */
     public static GradientDrawable gradientPill(Context c) {
-        GradientDrawable d = new GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{ACCENT_2, ACCENT});
-        d.setShape(GradientDrawable.RECTANGLE);
-        d.setCornerRadius(dp(c, R_PILL));
-        return d;
+        return gradient(c, ACCENT, R_PILL);
     }
 
     /** 首页大卡：与胶囊同一组渐变端点，圆角按大卡规格。 */
@@ -153,14 +148,30 @@ public final class Ui {
         return d;
     }
 
-    /** 蓝色实心渐变胶囊，和原包 CTA 同一条蓝。 */
+    /** 蓝色实心渐变胶囊，和原包 CTA 同一条蓝，但带对角提亮。 */
     public static GradientDrawable gradientBluePill(Context c) {
+        return gradient(c, ACCENT, R_PILL);
+    }
+
+    /** 任意主色的渐变胶囊：左上提亮，右下用原色，视觉上像有光从左上来。 */
+    public static GradientDrawable gradient(Context c, int color, float radiusDp) {
         GradientDrawable d = new GradientDrawable(
-                GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[]{ACCENT_2, ACCENT});
+                GradientDrawable.Orientation.TL_BR, new int[]{lighten(color, 0.24f), color});
         d.setShape(GradientDrawable.RECTANGLE);
-        d.setCornerRadius(dp(c, R_PILL));
+        d.setCornerRadius(dp(c, radiusDp));
         return d;
+    }
+
+    /** 把颜色朝白色混一点，得到同色系的浅端。 */
+    public static int lighten(int color, float amount) {
+        int a = (color >>> 24) & 0xFF;
+        int r = (color >> 16) & 0xFF;
+        int g = (color >> 8) & 0xFF;
+        int b = color & 0xFF;
+        r = Math.round(r + (255 - r) * amount);
+        g = Math.round(g + (255 - g) * amount);
+        b = Math.round(b + (255 - b) * amount);
+        return (a << 24) | (r << 16) | (g << 8) | b;
     }
 
     public static GradientDrawable gradientCard(Context c, int start, int end, float radiusDp) {

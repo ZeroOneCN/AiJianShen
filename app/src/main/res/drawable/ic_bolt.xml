@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 线性图标，24 视口 / 2 单位描边 -->
+<!-- 线性图标，24 视口 / 2 单位描边；已按包围盒归一化，图形铺满视口 -->
+
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:fillColor="#FF1C212C"
-        android:pathData="M13.4 2L4.8 14H10.6L9.8 22 19.4 9.6H13.2Z" />
+    <group
+        android:scaleX="1.056"
+        android:scaleY="1.056"
+        android:translateX="-0.778"
+        android:translateY="-0.672">
+        <path
+            android:fillColor="#FF1C212C"
+            android:pathData="M13.4 2L4.8 14H10.6L9.8 22 19.4 9.6H13.2Z" />
+    </group>
 </vector>

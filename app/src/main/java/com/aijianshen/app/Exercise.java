@@ -76,26 +76,34 @@ public class Exercise {
         return "发力时呼气，还原时吸气；动作慢一点，呼吸跟上。";
     }
 
-    /** 训练页展示用：取前两步要领，过长自动截断。 */
-    /** 训练页只需要一句提示：优先整句，其次在句号处截断，不要半句加省略号。 */
+    /** 训练页提示：前两步要领整段给出，按句子收尾，不出现「半句…」。 */
     public String brief() {
         if (steps.isEmpty()) {
             return "";
         }
-        String s = steps.get(0).replace("首先，", "").replace("首先", "").trim();
-        if (s.length() < 26 && steps.size() > 1) {
-            s = s + " " + steps.get(1);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(2, steps.size()); i++) {
+            String one = steps.get(i).replace("首先，", "").replace("首先", "").trim();
+            if (one.isEmpty()) {
+                continue;
+            }
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(one);
         }
-        if (s.length() <= 78) {
+        String s = sb.toString();
+        if (s.length() <= 112) {
             return s;
         }
+        // 太长时只在句末收尾，宁可少一句，也不要半句加省略号
         int cut = -1;
-        for (int i = 0; i < 78; i++) {
+        for (int i = 0; i < 112 && i < s.length(); i++) {
             char c = s.charAt(i);
             if (c == '。' || c == '；') {
                 cut = i + 1;
             }
         }
-        return cut > 30 ? s.substring(0, cut) : s.substring(0, 78) + "…";
+        return cut > 40 ? s.substring(0, cut) : s.substring(0, 112);
     }
 }

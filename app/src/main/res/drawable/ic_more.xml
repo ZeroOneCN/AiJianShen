@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 更多：三点横向，实心圆点，24 视口内占满宽度 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF1C212C"
+        android:pathData="M5.6 9.4A2.6 2.6 0 1 1 5.6 14.6A2.6 2.6 0 1 1 5.6 9.4Z" />
+    <path
+        android:fillColor="#FF1C212C"
+        android:pathData="M12 9.4A2.6 2.6 0 1 1 12 14.6A2.6 2.6 0 1 1 12 9.4Z" />
+    <path
+        android:fillColor="#FF1C212C"
+        android:pathData="M18.4 9.4A2.6 2.6 0 1 1 18.4 14.6A2.6 2.6 0 1 1 18.4 9.4Z" />
+</vector>

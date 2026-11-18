@@ -183,35 +183,26 @@ public class PlanActivity extends Activity {
         addInfo("新手动作 30 秒、进阶 40 秒、高手 50 秒；组间休息也会按目标调整。");
     }
 
+    /**
+     * 重点部位：顺序单列。双列时每格只有半屏宽，图标加四五个字就挤，
+     * 单列一行一项能放下图标、名称和右侧选中态，从上往下扫一眼就能选完。
+     */
     private void renderFocus() {
-        LinearLayout grid = new LinearLayout(this);
-        grid.setOrientation(LinearLayout.VERTICAL);
-        body.addView(grid, new LinearLayout.LayoutParams(
+        LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        body.addView(list, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        LinearLayout row = null;
         for (int i = 0; i < PlanProfile.FOCUS.length; i++) {
-            if (i % 2 == 0) {
-                row = new LinearLayout(this);
-                row.setOrientation(LinearLayout.HORIZONTAL);
-                LinearLayout.LayoutParams rlp = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                if (i > 0) {
-                    rlp.topMargin = Ui.dpi(this, 9);
-                }
-                grid.addView(row, rlp);
-            }
             final int idx = i;
             View cell = focusCell(PlanProfile.FOCUS[i], focusIcon(i), focusColor(i),
                     profile.focus[i], v -> toggleFocus(idx));
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-            if (i % 2 == 0) {
-                lp.rightMargin = Ui.dpi(this, 5);
-            } else {
-                lp.leftMargin = Ui.dpi(this, 5);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (i > 0) {
+                lp.topMargin = Ui.dpi(this, 8);
             }
-            row.addView(cell, lp);
+            list.addView(cell, lp);
         }
         addInfo("可以多选；选择「全身」会按完整动作池安排。");
     }
@@ -362,10 +353,10 @@ public class PlanActivity extends Activity {
         LinearLayout cell = new LinearLayout(this);
         cell.setOrientation(LinearLayout.HORIZONTAL);
         cell.setGravity(Gravity.CENTER_VERTICAL);
-        cell.setPadding(Ui.dpi(this, 13), Ui.dpi(this, 14),
-                Ui.dpi(this, 13), Ui.dpi(this, 14));
+        cell.setPadding(Ui.dpi(this, 14), Ui.dpi(this, 13),
+                Ui.dpi(this, 14), Ui.dpi(this, 13));
         cell.setBackground(selected
-                ? Ui.roundStroke(this, Ui.SURFACE, Ui.R_CARD, Ui.ACCENT)
+                ? Ui.roundStroke(this, Ui.ACCENT_SOFT, Ui.R_CARD, Ui.ACCENT)
                 : Ui.round(this, Ui.SURFACE, Ui.R_CARD));
         cell.setClickable(true);
         cell.setOnClickListener(click);
@@ -373,20 +364,36 @@ public class PlanActivity extends Activity {
         FrameLayout tile = new FrameLayout(this);
         tile.setBackground(Ui.round(this, Ui.withAlpha(color, 0.13f), 9f));
         cell.addView(tile, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 32), Ui.dpi(this, 32)));
+                Ui.dpi(this, 34), Ui.dpi(this, 34)));
         IconView ic = new IconView(this);
         ic.setIcon(icon);
         ic.setColor(color);
         tile.addView(ic, new FrameLayout.LayoutParams(
-                Ui.dpi(this, 18), Ui.dpi(this, 18), Gravity.CENTER));
+                Ui.dpi(this, 19), Ui.dpi(this, 19), Gravity.CENTER));
 
         TextView name = new TextView(this);
         name.setText(label);
         name.setTextColor(selected ? Ui.ACCENT : Ui.INK);
         name.setTextSize(15);
-        name.setPadding(Ui.dpi(this, 9), 0, 0, 0);
+        name.setPadding(Ui.dpi(this, 12), 0, 0, 0);
         Ui.font(name, 600);
-        cell.addView(name);
+        cell.addView(name, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        // 右侧选中态：选中是实心圆加对勾，未选是浅灰描边圆环，行末对齐一目了然
+        FrameLayout mark = new FrameLayout(this);
+        mark.setBackground(selected
+                ? Ui.round(this, Ui.ACCENT, 12f)
+                : Ui.roundStroke(this, 0x00000000, 12f, 0xFFD8DCE3));
+        cell.addView(mark, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 24), Ui.dpi(this, 24)));
+        if (selected) {
+            IconView tick = new IconView(this);
+            tick.setIcon(IconView.CHECK);
+            tick.setColor(0xFFFFFFFF);
+            mark.addView(tick, new FrameLayout.LayoutParams(
+                    Ui.dpi(this, 14), Ui.dpi(this, 14), Gravity.CENTER));
+        }
         return cell;
     }
 

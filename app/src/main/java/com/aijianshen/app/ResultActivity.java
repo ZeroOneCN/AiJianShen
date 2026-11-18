@@ -448,7 +448,7 @@ public class ResultActivity extends Activity {
         record.setTextColor(Color.WHITE);
         record.setTextSize(13);
         record.setGravity(Gravity.CENTER);
-        record.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, 20f), 0x33FFFFFF));
+        record.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.ACCENT, 20f), 0x33FFFFFF));
         Ui.font(record, 600);
         head.addView(record, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 66), Ui.dpi(this, 34)));

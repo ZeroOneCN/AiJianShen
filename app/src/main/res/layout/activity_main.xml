@@ -248,6 +248,7 @@
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 
+            <!-- 标题居中：左右各留 52dp 等宽槽位，右侧放「调整」，标题才真正落在屏幕中线上 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -255,10 +256,15 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
+                <View
+                    android:layout_width="52dp"
+                    android:layout_height="1dp" />
+
                 <TextView
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:gravity="center"
                     android:includeFontPadding="false"
                     android:text="本周安排"
                     android:textColor="@color/ink"
@@ -266,9 +272,9 @@
 
                 <TextView
                     android:id="@+id/btn_edit_plan"
-                    android:layout_width="wrap_content"
+                    android:layout_width="52dp"
                     android:layout_height="wrap_content"
-                    android:paddingLeft="10dp"
+                    android:gravity="right|center_vertical"
                     android:paddingTop="4dp"
                     android:paddingBottom="4dp"
                     android:text="调整"

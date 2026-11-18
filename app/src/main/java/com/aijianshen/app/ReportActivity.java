@@ -66,7 +66,7 @@ public class ReportActivity extends Activity {
         weightCard.setBackground(Ui.round(this, Ui.SURFACE, 20f));
 
         TextView weightLog = findViewById(R.id.btn_weight_log);
-        weightLog.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, Ui.R_PILL),
+        weightLog.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.ACCENT, Ui.R_PILL),
                 0x33FFFFFF));
         Ui.font(weightLog, 600);
         weightLog.setOnClickListener(v -> HealthDialogs.recordWeight(this, this::renderWeight));
@@ -92,7 +92,7 @@ public class ReportActivity extends Activity {
         all.setOnClickListener(v -> showRecords());
 
         TextView log = findViewById(R.id.btn_log);
-        log.setBackground(Ui.ripple(this, Ui.round(this, Ui.ACCENT, Ui.R_PILL), 0x33FFFFFF));
+        log.setBackground(Ui.ripple(this, Ui.gradient(this, Ui.ACCENT, Ui.R_PILL), 0x33FFFFFF));
         Ui.font(log, 600);
         log.setOnClickListener(v -> showLog());
 

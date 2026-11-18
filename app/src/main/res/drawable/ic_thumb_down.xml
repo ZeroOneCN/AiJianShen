@@ -1,22 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 线性图标，24 视口 / 2 单位描边 -->
+<!-- 线性图标，24 视口 / 2 单位描边；已按包围盒归一化，图形铺满视口 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <group android:pivotX="12" android:pivotY="12" android:scaleY="-1">
-        <path
-            android:pathData="M4.7 10H6.1A1.3 1.3 0 0 1 7.4 11.3V18.1A1.3 1.3 0 0 1 6.1 19.4H4.7A1.3 1.3 0 0 1 3.4 18.1V11.3A1.3 1.3 0 0 1 4.7 10Z"
-            android:strokeColor="#FF1C212C"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:strokeWidth="2" />
-        <path
-            android:pathData="M9 19.4H15.2C16.4 19.4 17.4 18.6 17.7 17.4L18.8 12.3C19 11.1 18.1 10 16.9 10H12.8L13.4 6.9C13.6 5.9 12.9 5 11.9 5C11.2 5 10.6 5.4 10.3 6L9 9.2Z"
-            android:strokeColor="#FF1C212C"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:strokeWidth="2" />
+    <!-- 由 ic_thumb_up 垂直镜像得到 -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:scaleY="-1">
+        <group
+            android:scaleX="1.354"
+            android:scaleY="1.354"
+            android:translateX="-3.163"
+            android:translateY="-4.517">
+            <path
+                android:pathData="M4.7 10H6.1A1.3 1.3 0 0 1 7.4 11.3V18.1A1.3 1.3 0 0 1 6.1 19.4H4.7A1.3 1.3 0 0 1 3.4 18.1V11.3A1.3 1.3 0 0 1 4.7 10Z"
+                android:strokeColor="#FF1C212C"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:strokeWidth="1.477" />
+            <path
+                android:pathData="M9 19.4H15.2C16.4 19.4 17.4 18.6 17.7 17.4L18.8 12.3C19 11.1 18.1 10 16.9 10H12.8L13.4 6.9C13.6 5.9 12.9 5 11.9 5C11.2 5 10.6 5.4 10.3 6L9 9.2Z"
+                android:strokeColor="#FF1C212C"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:strokeWidth="1.477" />
+        </group>
     </group>
 </vector>

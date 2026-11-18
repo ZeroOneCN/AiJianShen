@@ -1,26 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 线性图标，24 视口 / 2 单位描边 -->
+<!-- 线性图标，24 视口 / 2 单位描边；已按包围盒归一化，图形铺满视口 -->
+
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <path
-        android:pathData="M4 9.4H7.4L12 5.2V18.8L7.4 14.6H4Z"
-        android:strokeColor="#FF1C212C"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2" />
-    <path
-        android:pathData="M14.8 9.4C16.2 10.6 16.2 13.4 14.8 14.6"
-        android:strokeColor="#FF1C212C"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2" />
-    <path
-        android:pathData="M17.4 7C19.8 9.2 19.8 14.8 17.4 17"
-        android:strokeColor="#FF1C212C"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2" />
+    <group
+        android:scaleX="1.337"
+        android:scaleY="1.337"
+        android:translateX="-3.907"
+        android:translateY="-4.041">
+        <path
+            android:pathData="M4 9.4H7.4L12 5.2V18.8L7.4 14.6H4Z"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.496" />
+        <path
+            android:pathData="M14.8 9.4C16.2 10.6 16.2 13.4 14.8 14.6"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.496" />
+        <path
+            android:pathData="M17.4 7C19.8 9.2 19.8 14.8 17.4 17"
+            android:strokeColor="#FF1C212C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:strokeWidth="1.496" />
+    </group>
 </vector>
