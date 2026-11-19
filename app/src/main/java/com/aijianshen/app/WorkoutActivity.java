@@ -96,7 +96,7 @@ public class WorkoutActivity extends Activity {
     private TimerRingView ring;
     private TextView tvState;
     private TextView tvExercise;
-    private TextView tvTip;
+    private StepTips tvTip;
     private TextView tvSet;
     private TextView tvToggle;
     private TextView tvTitle;
@@ -131,6 +131,13 @@ public class WorkoutActivity extends Activity {
     /** 休息中才显示的两个快捷按钮，避免和「暂停」抢位置。 */
     private LinearLayout restActions;
     private PopupWindow topMenu;
+    /** 当前动作每条要领分到的秒数；-1 表示这一步不做分步高亮。 */
+    private int tipSeg = -1;
+    /** 当前高亮到第几条要领。 */
+    private int tipAt = -1;
+    /** 本轮临时屏蔽的动作：用户按了「这一轮不再出现」。 */
+    private final java.util.Set<String> mutedThisRound = new java.util.HashSet<>();
+    private PopupWindow actionMenu;
 
     private AudioManager audio;
     private AudioFocusRequest focusRequest;
@@ -169,6 +176,7 @@ public class WorkoutActivity extends Activity {
             if (s.remaining != rem) {
                 s.remaining = rem;
                 paintTime();
+                stepTipIfNeeded(s);
                 // 最后 3 秒滴答，提醒收尾；每档只响一次
                 if (rem > 0 && rem <= 3 && rem != lastBeep) {
                     lastBeep = rem;
@@ -223,7 +231,6 @@ public class WorkoutActivity extends Activity {
 
         Ui.font(tvState, 800);
         Ui.font(tvExercise, 700);
-        Ui.font(tvTip, 400);
         Ui.font(tvSet, 600);
         Ui.font(tvToggle, 700);
         Ui.font(tvTitle, 600);
@@ -305,6 +312,12 @@ public class WorkoutActivity extends Activity {
         findViewById(R.id.btn_toggle).setOnClickListener(v -> onToggle());
         findViewById(R.id.btn_like).setOnClickListener(v -> toggleFavorite());
         findViewById(R.id.btn_dislike).setOnClickListener(v -> replaceCurrent());
+        // 单点是「换一个」；长按才是「这个动作我做不了」的三个出口。
+        // 跳过是高频操作，不能给它加确认框，所以把选择藏进长按。
+        findViewById(R.id.btn_dislike).setOnLongClickListener(v -> {
+            showActionMenu(v);
+            return true;
+        });
     }
 
     /** 顶部「更多」：真下拉，贴着按钮往下展开、右边缘对齐，手指不用跑到屏幕底部。 */
@@ -320,6 +333,18 @@ public class WorkoutActivity extends Activity {
                 this::toggleMusic);
         addDropRow(root, IconView.SETTINGS, "训练设置",
                 () -> startActivity(new Intent(this, WorkoutSettingsActivity.class)));
+
+        // 分隔线：上面三项都是设置类，下面这条是「结束」，性质不同不能挨着排
+        View divider = new View(this);
+        divider.setBackgroundColor(0xFFEFF1F4);
+        LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, Math.max(1, Ui.dpi(this, 1)));
+        dlp.topMargin = Ui.dpi(this, 5);
+        dlp.bottomMargin = Ui.dpi(this, 5);
+        dlp.leftMargin = Ui.dpi(this, 8);
+        dlp.rightMargin = Ui.dpi(this, 8);
+        root.addView(divider, dlp);
+        addDropRow(root, IconView.CLOSE, "退出本次训练", Ui.RED, this::showExit);
 
         PopupWindow pop = new PopupWindow(root,
                 Ui.dpi(this, 208), ViewGroup.LayoutParams.WRAP_CONTENT, true);
@@ -342,6 +367,11 @@ public class WorkoutActivity extends Activity {
 
     /** 下拉菜单的一行：图标 + 文字，不放箭头——下拉不需要再暗示"进入下一层"。 */
     private void addDropRow(LinearLayout parent, int icon, String label, Runnable action) {
+        addDropRow(parent, icon, label, Ui.INK, action);
+    }
+
+    private void addDropRow(LinearLayout parent, int icon, String label, int color,
+                            Runnable action) {
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
@@ -351,18 +381,19 @@ public class WorkoutActivity extends Activity {
         row.setPadding(ph, 0, ph, 0);
         row.setOnClickListener(v -> {
             dismissTopMenu();
+            dismissActionMenu();
             action.run();
         });
 
         IconView ic = new IconView(this);
         ic.setIcon(icon);
-        ic.setColor(Ui.INK);
+        ic.setColor(color);
         row.addView(ic, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 19), Ui.dpi(this, 19)));
 
         TextView tv = new TextView(this);
         tv.setText(label);
-        tv.setTextColor(Ui.INK);
+        tv.setTextColor(color);
         tv.setTextSize(14.5f);
         tv.setSingleLine(true);
         Ui.font(tv, 600);
@@ -635,7 +666,7 @@ public class WorkoutActivity extends Activity {
             tvState.setTextColor(Ui.ACCENT);
             ring.setRingColor(Ui.ACCENT);
             tvExercise.setText(s.exercise.name);
-            tvTip.setText(s.exercise.brief());
+            paintSteps(s);
             tvSet.setText(setLabel(i));
             photo.bind(s.exercise);
             photo.setAlpha(1f);
@@ -646,6 +677,41 @@ public class WorkoutActivity extends Activity {
             tvState.setTextColor(Ui.INK_MUTED);
         }
         paintFavorite();
+    }
+
+    /**
+     * 要领逐条高亮：把这一步的总秒数均分给每条要领，按已过时间算当前第几条。
+     * 只有一条要领、或每条分不到 4 秒时不拆——闪得太快反而让人分神。
+     */
+    private void paintSteps(Step s) {
+        List<String> list = s.exercise.steps;
+        if (list == null || list.size() < 2 || s.total <= 0) {
+            tvTip.setText(s.exercise.brief());
+            tipSeg = -1;
+            tipAt = -1;
+            return;
+        }
+        int seg = Math.max(1, s.total / list.size());
+        tipSeg = seg;
+        tipAt = 0;
+        tvTip.setSteps(list, 0, seg);
+    }
+
+    /** tick 里推进高亮：只在跨过一条要领时重绘。 */
+    private void stepTipIfNeeded(Step s) {
+        if (s.rest || tipSeg <= 0) {
+            return;
+        }
+        List<String> list = s.exercise.steps;
+        if (list == null || list.size() < 2) {
+            return;
+        }
+        int passed = Math.max(0, s.total - s.remaining);
+        int act = Math.min(list.size() - 1, passed / tipSeg);
+        if (act != tipAt) {
+            tipAt = act;
+            tvTip.setSteps(list, act, tipSeg);
+        }
     }
 
     private int perRound() {
@@ -720,15 +786,25 @@ public class WorkoutActivity extends Activity {
     private void advance() {
         handler.removeCallbacks(tick);
         closeCurrentStep();
-        if (index >= steps.size() - 1) {
+        int next = nextPlayable(index);
+        if (next >= steps.size()) {
             complete();
             return;
         }
-        index++;
+        index = next;
         startStep(SystemClock.elapsedRealtime());
         show(index);
         cueStep(index);
         schedule();
+    }
+
+    /** 被屏蔽的步骤 total 已经置 0，这里一路跨过去。 */
+    private int nextPlayable(int from) {
+        int i = from + 1;
+        while (i < steps.size() && steps.get(i).total <= 0) {
+            i++;
+        }
+        return i;
     }
 
     /** 离开当前步骤时结算实际停留秒数。 */
@@ -847,11 +923,12 @@ public class WorkoutActivity extends Activity {
             return;
         }
         closeCurrentStep();
-        if (index >= steps.size() - 1) {
+        int next = nextPlayable(index);
+        if (next >= steps.size()) {
             complete();
             return;
         }
-        index++;
+        index = next;
         startStep(SystemClock.elapsedRealtime());
         show(index);
         cueStep(index);
@@ -982,6 +1059,177 @@ public class WorkoutActivity extends Activity {
             return;
         }
         showReplace(steps.get(index).exercise);
+    }
+
+    /**
+     * 长按「换一个」弹出三个出口。
+     *
+     * 为什么不放在「跳过」的确认框里：跳过是练到一半最常用的动作，
+     * 多一次确认就多一次打断。做不了是低频但重要的决策，藏在长按里正合适。
+     */
+    private void showActionMenu(View anchor) {
+        if (finished || index >= steps.size() || steps.get(index).rest) {
+            Toast.makeText(this, "休息中，等下一个动作再用", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Exercise e = steps.get(index).exercise;
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        int p = Ui.dpi(this, 6);
+        root.setPadding(p, p, p, p);
+
+        addDropRow(root, IconView.SWAP, "换个简单的", () -> applyEasier(e));
+        addDropRow(root, IconView.CLOSE, "这一轮不再出现", () -> muteThisRound(e));
+        addDropRow(root, IconView.TRASH, "以后别排这个", () -> blockForever(e));
+
+        PopupWindow pop = new PopupWindow(root,
+                Ui.dpi(this, 200), ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        pop.setBackgroundDrawable(Ui.roundStroke(this, Ui.SURFACE, 16f, 0x1A000000));
+        pop.setOutsideTouchable(true);
+        pop.setElevation(Ui.dp(this, 10));
+        pop.setOnDismissListener(() -> actionMenu = null);
+        actionMenu = pop;
+
+        // 锚点在屏幕下半部分，默认向下展开会顶到导航栏，必须往上弹
+        root.measure(View.MeasureSpec.makeMeasureSpec(Ui.dpi(this, 200),
+                        View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int up = root.getMeasuredHeight() + Ui.dpi(this, 10);
+        pop.showAsDropDown(anchor, 0, -up, Gravity.END);
+    }
+
+    private void dismissActionMenu() {
+        if (actionMenu != null) {
+            actionMenu.dismiss();
+            actionMenu = null;
+        }
+    }
+
+    /** 换个简单的：换完这一轮立刻生效，下次排计划直接用简单版。 */
+    private void applyEasier(Exercise from) {
+        Exercise pick = findEasier(from);
+        if (pick == null) {
+            Toast.makeText(this, "这个部位没有更简单的了，可以「这一轮不再出现」",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Store.setEasier(this, from.id, pick.id);
+        Store.setOverride(this, dayIndex, from.id, pick.id);
+        Data.clearPlanCache();
+        for (int i = index; i < steps.size(); i++) {
+            Step s = steps.get(i);
+            if (s.exercise != null && s.exercise.id.equals(from.id)) {
+                s.exercise = pick;
+            }
+        }
+        show(index);
+        boolean shorter = pick.seconds <= from.seconds;
+        Toast.makeText(this, shorter
+                        ? "已换成「" + pick.name + "」，以后也按这个排"
+                        : "这个部位没有更短的，先换成「" + pick.name + "」",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 同部位、不增加器械要求、时间更短的里面取最接近的一个：
+     * 降一档而不是直接降到地板，否则练起来像换了个项目。
+     *
+     * 动作库没有难度分级，只能用秒数当代理——但同部位常常全是 40 秒，
+     * 一个都挑不出来。所以第二轮放宽成"时长最接近的"，宁可换平级也不让人卡住。
+     */
+    private Exercise findEasier(Exercise from) {
+        List<Exercise> pool = Data.byPart(from.part);
+        if (pool == null || pool.isEmpty()) {
+            pool = Data.all();
+        }
+        java.util.Set<String> blocked = Store.blocked(this);
+        Exercise best = null;
+        int bestScore = Integer.MAX_VALUE;
+        for (Exercise e : pool) {
+            if (e.id.equals(from.id) || blocked.contains(e.id)) {
+                continue;
+            }
+            if (!from.needsGear() && e.needsGear()) {
+                continue;
+            }
+            if (e.seconds >= from.seconds) {
+                continue;
+            }
+            // 类型不同罚 60 秒：优先同类型里最接近的，实在没有再看别的
+            int score = (from.seconds - e.seconds) + (e.kind.equals(from.kind) ? 0 : 60);
+            if (score < bestScore) {
+                bestScore = score;
+                best = e;
+            }
+        }
+        if (best != null) {
+            return best;
+        }
+        // 没有更短的：退一步给同部位时长最接近的
+        bestScore = Integer.MAX_VALUE;
+        for (Exercise e : pool) {
+            if (e.id.equals(from.id) || blocked.contains(e.id)) {
+                continue;
+            }
+            if (!from.needsGear() && e.needsGear()) {
+                continue;
+            }
+            int score = Math.abs(e.seconds - from.seconds)
+                    + (e.kind.equals(from.kind) ? 0 : 30);
+            if (score < bestScore) {
+                bestScore = score;
+                best = e;
+            }
+        }
+        return best;
+    }
+
+    private void muteThisRound(Exercise e) {
+        silence(e);
+        Toast.makeText(this, "这一轮不再出现「" + e.name + "」", Toast.LENGTH_SHORT).show();
+        resumeIfPaused();
+        onSkip();
+    }
+
+    private void blockForever(Exercise e) {
+        Store.block(this, e.id);
+        Data.clearPlanCache();
+        silence(e);
+        Toast.makeText(this, "以后不再排「" + e.name + "」，可在训练设置里恢复",
+                Toast.LENGTH_SHORT).show();
+        resumeIfPaused();
+        onSkip();
+    }
+
+    /**
+     * 屏蔽完当前动作要继续练下一个，但用户很可能是「暂停着挑的」。
+     * 不解除暂停的话，画面会停在一个已经换掉的动上，计时也不动。
+     */
+    private void resumeIfPaused() {
+        if (!paused) {
+            return;
+        }
+        paused = false;
+        iconToggle.setIcon(IconView.PAUSE);
+        tvToggle.setText("暂停");
+    }
+
+    /** 把这个动作本轮剩下的练习步、以及紧跟其后的休息步清零，advance 会直接跨过。 */
+    private void silence(Exercise e) {
+        mutedThisRound.add(e.id);
+        for (int i = 0; i < steps.size(); i++) {
+            Step s = steps.get(i);
+            if (s.exercise == null || !s.exercise.id.equals(e.id) || s.rest) {
+                continue;
+            }
+            s.total = 0;
+            s.remaining = 0;
+            if (i + 1 < steps.size() && steps.get(i + 1).rest
+                    && steps.get(i + 1).exercise.id.equals(e.id)) {
+                steps.get(i + 1).total = 0;
+                steps.get(i + 1).remaining = 0;
+            }
+        }
     }
 
     private void ensureVoice() {
@@ -1365,7 +1613,14 @@ public class WorkoutActivity extends Activity {
         root.addView(title);
 
         TextView sub = new TextView(this);
-        sub.setText("选「稍后再做」会记住当前进度，下次接着练。");
+        // 把「已经练掉多少」说清楚：用户放弃前最想知道的就是这部分会不会白练
+        int secs = Math.max(0, elapsedSeconds());
+        String spent = secs >= 60
+                ? (secs / 60) + " 分 " + (secs % 60) + " 秒"
+                : secs + " 秒";
+        sub.setText(secs >= 20
+                ? "已经练了 " + spent + "。选「稍后再做」会存下进度，下次接着练。"
+                : "选「稍后再做」会记住当前进度，下次接着练。");
         sub.setTextColor(Ui.INK_SOFT);
         sub.setTextSize(13);
         sub.setGravity(Gravity.CENTER);

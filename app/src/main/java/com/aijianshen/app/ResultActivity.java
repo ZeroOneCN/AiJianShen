@@ -53,6 +53,10 @@ public class ResultActivity extends Activity {
     /** 点第一下之前的难度档位，改主意时以它为准。 */
     private int feelBaseLevel = -1;
     private TextView feelTip;
+    /** 选完感受才出现的「下一步」，没选之前不占位置。 */
+    private LinearLayout adviceCard;
+    private TextView adviceTitle;
+    private TextView adviceBody;
 
     private TextView weightValue;
     private TextView weightMax;
@@ -117,6 +121,8 @@ public class ResultActivity extends Activity {
         body.addView(weekCard(), cardLp());
         body.addView(section("感觉怎么样"));
         body.addView(feelCard(), cardLp());
+        adviceCard = adviceCard();
+        body.addView(adviceCard, cardLp());
         body.addView(section("身体数据"));
         body.addView(weightCard(), cardLp());
         body.addView(section("保持节奏"));
@@ -425,6 +431,101 @@ public class ResultActivity extends Activity {
         Toast.makeText(this, idx == 1 ? "已记录：刚刚好"
                 : "已记录：" + FEEL_LABELS[idx] + "，下周按「" + now + "」安排",
                 Toast.LENGTH_SHORT).show();
+
+        Coach.Advice ad = Coach.forResult(this, idx, motionName(), pr);
+        if (ad != null && adviceCard != null) {
+            adviceTitle.setText(ad.title);
+            adviceBody.setText(ad.body);
+            adviceCard.setVisibility(View.VISIBLE);
+        }
+    }
+
+    /** 建议里要说到具体动作名：单动作练就是它，整课就用当天第一个动作。 */
+    private String motionName() {
+        if (single != null && !single.isEmpty()) {
+            return single;
+        }
+        try {
+            Data.Day d = Data.withOverrides(
+                    Data.weekPlan(Store.profile(this)).get(dayIndex),
+                    Store.overrides(this, dayIndex));
+            if (d != null && !d.exercises.isEmpty()) {
+                return d.exercises.get(0).name;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private LinearLayout adviceCard() {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(Ui.round(this, 0xFFF2F6FF, 20f));
+        int p = Ui.dpi(this, 16);
+        card.setPadding(p, Ui.dpi(this, 14), p, Ui.dpi(this, 12));
+        card.setVisibility(View.GONE);
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(head);
+
+        IconView ic = new IconView(this);
+        ic.setIcon(IconView.BOLT);
+        ic.setColor(Ui.ACCENT);
+        head.addView(ic, new LinearLayout.LayoutParams(
+                Ui.dpi(this, 16), Ui.dpi(this, 16)));
+
+        TextView label = new TextView(this);
+        label.setText("下一步");
+        label.setTextColor(Ui.ACCENT);
+        label.setTextSize(11.5f);
+        label.setPadding(Ui.dpi(this, 6), 0, 0, 0);
+        Ui.font(label, 700);
+        head.addView(label);
+
+        adviceTitle = new TextView(this);
+        adviceTitle.setTextColor(Ui.INK);
+        adviceTitle.setTextSize(15);
+        adviceTitle.setLineSpacing(0f, 1.3f);
+        adviceTitle.setPadding(0, Ui.dpi(this, 8), 0, 0);
+        Ui.font(adviceTitle, 700);
+        card.addView(adviceTitle);
+
+        adviceBody = new TextView(this);
+        adviceBody.setTextColor(Ui.INK_SOFT);
+        adviceBody.setTextSize(13);
+        adviceBody.setLineSpacing(0f, 1.45f);
+        adviceBody.setPadding(0, Ui.dpi(this, 6), 0, Ui.dpi(this, 4));
+        Ui.font(adviceBody, 400);
+        card.addView(adviceBody);
+
+        LinearLayout row = new LinearLayout(this);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.END);
+        card.addView(row);
+
+        TextView know = new TextView(this);
+        know.setText("知道了");
+        know.setTextColor(Ui.INK_SOFT);
+        know.setTextSize(12.5f);
+        know.setPadding(Ui.dpi(this, 10), Ui.dpi(this, 8),
+                Ui.dpi(this, 10), Ui.dpi(this, 8));
+        Ui.font(know, 500);
+        row.addView(know);
+        know.setOnClickListener(v -> adviceCard.setVisibility(View.GONE));
+
+        TextView fix = new TextView(this);
+        fix.setText("改一下计划");
+        fix.setTextColor(Ui.ACCENT);
+        fix.setTextSize(12.5f);
+        fix.setPadding(Ui.dpi(this, 10), Ui.dpi(this, 8),
+                Ui.dpi(this, 10), Ui.dpi(this, 8));
+        Ui.font(fix, 700);
+        row.addView(fix);
+        fix.setOnClickListener(v -> startActivity(new Intent(this, PlanActivity.class)));
+
+        return card;
     }
 
     private LinearLayout weightCard() {

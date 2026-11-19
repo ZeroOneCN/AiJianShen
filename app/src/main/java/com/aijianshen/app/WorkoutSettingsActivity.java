@@ -152,6 +152,26 @@ public class WorkoutSettingsActivity extends Activity {
         clearMusic.setVisibility(prefs.musicUri.isEmpty()
                 ? android.view.View.GONE : android.view.View.VISIBLE);
 
+        // 只有屏蔽过动作才出现：没屏蔽过的人不该看到一条空的「恢复」
+        int blockedCount = Store.blocked(this).size();
+        if (blockedCount > 0) {
+            UiList.label(this, body, "做不了的动作");
+            LinearLayout blockedCard = UiList.card(this);
+            body.addView(blockedCard, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT));
+            UiList.row(this, blockedCard, IconView.CLOSE, Ui.ACCENT,
+                    "已屏蔽 " + blockedCount + " 个动作",
+                    "点一下全部恢复，下次排计划重新用上", true, v -> {
+                        Store.clearBlocked(this);
+                        Store.clearEasier(this);
+                        Data.clearPlanCache();
+                        Toast.makeText(this, "已恢复，下次排计划会重新用上",
+                                Toast.LENGTH_SHORT).show();
+                        recreate();
+                    });
+        }
+
         UiList.hint(this, body,
                 "选中的音乐会复制一份到应用内，删除原文件也不影响播放；不会上传。"
                         + "语音口令依赖系统 TTS 中文语音包。");

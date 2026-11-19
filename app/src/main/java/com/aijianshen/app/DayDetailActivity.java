@@ -203,11 +203,21 @@ public class DayDetailActivity extends Activity {
         row.addView(chevron, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 18), Ui.dpi(this, 18)));
 
-        row.setOnClickListener(v -> {
-            Intent it = new Intent(this, WorkoutActivity.class);
-            it.putExtra(WorkoutActivity.EXTRA_SINGLE, e.name);
-            startActivity(it);
-        });
+        // 点行先看「怎么做」，卡片里再决定练不练。右侧一直是 chevron（进入下一层），
+        // 原来点一下却直接开始倒计时，图标和行为说的不是一回事。
+        row.setOnClickListener(v -> ExerciseSheet.show(this, e, new ExerciseSheet.OnAction() {
+            @Override
+            public void onStart() {
+                Intent it = new Intent(DayDetailActivity.this, WorkoutActivity.class);
+                it.putExtra(WorkoutActivity.EXTRA_SINGLE, e.name);
+                startActivity(it);
+            }
+
+            @Override
+            public void onReplace() {
+                replace(e);
+            }
+        }));
 
         View divider = new View(this);
         divider.setBackgroundColor(0xFFEFEFF2);

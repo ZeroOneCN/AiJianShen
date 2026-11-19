@@ -33,6 +33,8 @@ public final class Data {
     private static final Map<String, Exercise> BY_ID = new HashMap<>();
     private static final Map<String, List<Exercise>> BY_PART = new LinkedHashMap<>();
     private static volatile boolean loaded = false;
+    /** 排计划时要读本地偏好（屏蔽 / 降级），留一份 application context。 */
+    private static Context appCtx;
 
     private Data() {
     }
@@ -42,6 +44,7 @@ public final class Data {
         if (loaded) {
             return;
         }
+        appCtx = ctx.getApplicationContext();
         try {
             String text = readAsset(ctx, "exercises.json");
             JSONObject root = new JSONObject(text);
@@ -265,9 +268,46 @@ public final class Data {
                 out.add(recoveryDay(profile, i, seed + i * 17));
             }
         }
+        applyUserPrefs(out);
         // 首页、详情、训练页各自会取一次计划，同一周同一条件只排一次
         PLAN_CACHE.put(key, out);
         return out;
+    }
+
+    /**
+     * 用户说过「以后别排这个」或「换个简单的」：在这里统一改计划，
+     * 首页、日详情、训练页三个入口就不用各自处理一遍。
+     */
+    private static void applyUserPrefs(List<Day> days) {
+        if (appCtx == null) {
+            return;
+        }
+        Set<String> blocked = Store.blocked(appCtx);
+        Map<String, String> easier = Store.easierPicks(appCtx);
+        if (blocked.isEmpty() && easier.isEmpty()) {
+            return;
+        }
+        for (Day d : days) {
+            if (d.rest) {
+                continue;
+            }
+            List<Exercise> keep = new ArrayList<>();
+            for (Exercise e : d.exercises) {
+                String to = easier.get(e.id);
+                Exercise swap = to == null ? null : byId(to);
+                Exercise use = swap == null ? e : swap;
+                if (blocked.contains(use.id)) {
+                    continue;
+                }
+                keep.add(use);
+            }
+            // 屏蔽掉之后不足 3 个动作，这天就没法练了：保留原计划，
+            // 训练页里还能单个跳过，总比给一张空课表强。
+            if (keep.size() >= 3) {
+                d.exercises.clear();
+                d.exercises.addAll(keep);
+            }
+        }
     }
 
     /** 计划缓存：一周内同一套条件结果相同，键里带上会改变结果的所有字段。 */

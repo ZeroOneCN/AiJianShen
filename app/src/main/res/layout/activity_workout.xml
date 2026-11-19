@@ -209,15 +209,14 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- 提示整行铺满，同样不限行数：要领要读完，不能半句就省略号 -->
-        <TextView
+        <!-- 要领区支持两种模式：休息时一句话，动作进行中逐条高亮（最多 3 行）。
+             样式全部在 StepTips 里给，不要在 XML 上写 textSize / lineSpacing：
+             LinearLayout 没有这些属性，写了也不会生效。 -->
+        <com.aijianshen.app.StepTips
             android:id="@+id/tv_tip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:lineSpacingExtra="3dp"
-            android:textColor="@color/ink_soft"
-            android:textSize="12.5sp" />
+            android:layout_marginTop="8dp" />
 
         <LinearLayout
             android:layout_width="match_parent"

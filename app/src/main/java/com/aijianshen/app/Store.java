@@ -45,6 +45,10 @@ public final class Store {
     private static final String K_PENDING = "pending_workout";
     private static final String K_PR = "personal_records";
     private static final String K_TMPL = "my_workouts";
+    /** 以后别再排的动作 id：用户在训练里明说过做不了。 */
+    private static final String K_BLOCKED = "blocked_exercises";
+    /** 做不了时换成的简单版：fromId → toId，改计划时优先用它。 */
+    private static final String K_EASIER = "easier_picks";
 
     private Store() {
     }
@@ -1319,6 +1323,84 @@ public final class Store {
 
     public static void clearOverrides(Context c) {
         sp(c).edit().remove(K_OVERRIDES).apply();
+    }
+
+    // ---- 做不了的动作 ----
+
+    /** 用户明确说过「以后别排这个」的动作 id。 */
+    public static Set<String> blocked(Context c) {
+        Set<String> out = new HashSet<>();
+        try {
+            JSONArray arr = new JSONArray(sp(c).getString(K_BLOCKED, "[]"));
+            for (int i = 0; i < arr.length(); i++) {
+                out.add(arr.optString(i, ""));
+            }
+        } catch (Exception ignored) {
+        }
+        out.remove("");
+        return out;
+    }
+
+    public static void block(Context c, String id) {
+        if (id == null || id.isEmpty()) {
+            return;
+        }
+        Set<String> now = blocked(c);
+        if (!now.add(id)) {
+            return;
+        }
+        JSONArray arr = new JSONArray();
+        for (String one : now) {
+            arr.put(one);
+        }
+        sp(c).edit().putString(K_BLOCKED, arr.toString()).apply();
+    }
+
+    public static void unblock(Context c, String id) {
+        Set<String> now = blocked(c);
+        if (!now.remove(id)) {
+            return;
+        }
+        JSONArray arr = new JSONArray();
+        for (String one : now) {
+            arr.put(one);
+        }
+        sp(c).edit().putString(K_BLOCKED, arr.toString()).apply();
+    }
+
+    public static void clearBlocked(Context c) {
+        sp(c).edit().remove(K_BLOCKED).apply();
+    }
+
+    /** 某个动作被降级成了哪个：计划重排时直接替换。 */
+    public static Map<String, String> easierPicks(Context c) {
+        Map<String, String> out = new LinkedHashMap<>();
+        try {
+            JSONObject root = new JSONObject(sp(c).getString(K_EASIER, "{}"));
+            java.util.Iterator<String> it = root.keys();
+            while (it.hasNext()) {
+                String from = it.next();
+                out.put(from, root.optString(from, ""));
+            }
+        } catch (Exception ignored) {
+        }
+        return out;
+    }
+
+    public static void setEasier(Context c, String fromId, String toId) {
+        if (fromId == null || toId == null || fromId.equals(toId)) {
+            return;
+        }
+        try {
+            JSONObject root = new JSONObject(sp(c).getString(K_EASIER, "{}"));
+            root.put(fromId, toId);
+            sp(c).edit().putString(K_EASIER, root.toString()).apply();
+        } catch (Exception ignored) {
+        }
+    }
+
+    public static void clearEasier(Context c) {
+        sp(c).edit().remove(K_EASIER).apply();
     }
 
     private static String weekStamp() {
