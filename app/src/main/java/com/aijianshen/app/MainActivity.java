@@ -233,7 +233,9 @@ public class MainActivity extends Activity {
         } else if (best > 0) {
             tvStreak.setText("最长 " + best + " 天");
         } else {
-            tvStreak.setText("开始");
+            // 从没练过时别写「开始」：那看着像主按钮，点进去却是连续页，容易误点。
+            // chip 上配着火苗图标，写「0 天」语义更准。
+            tvStreak.setText("0 天");
         }
     }
 

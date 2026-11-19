@@ -50,7 +50,8 @@ public final class Coach {
                             + "这周先别加码。");
         }
         if (feel == 2) {
-            return new Advice("下周三先降一档",
+            // 别写死「下周三」：这句在哪天练都会出现，写死会跟当天对不上
+            return new Advice("下周先降一档",
                     name + "的秒数减 5 秒，做稳了再加回来。"
                             + "觉得吃力不是意志问题，是这一档确实高了。");
         }
@@ -61,7 +62,7 @@ public final class Coach {
                             + "先把次数补齐再说。");
         }
         if (feel == 0 && onTrack) {
-            return new Advice("下周三给" + name + "加 5 秒",
+            return new Advice("下周给" + name + "加 5 秒",
                     "这周的出勤已经够了，加量不会挤掉恢复。轮次不变，"
                             + "只动秒数。");
         }

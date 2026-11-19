@@ -500,10 +500,19 @@ public class ResultActivity extends Activity {
         return null;
     }
 
-    /** 建议里要说到具体动作名：单动作练就是它，整课就用当天第一个动作。 */
+    /** 建议里要说到具体动作名：单动作练就是它，整课就用这次真正练的第一个动作。 */
     private String motionName() {
         if (single != null && !single.isEmpty()) {
             return single;
+        }
+        // 本次若点了「接上」或自定义动作，课表和本次未必是同一套，
+        // 优先说本次实际练的，不然建议里的动作名会跟刚才做的对不上
+        String ids = getIntent().getStringExtra(WorkoutActivity.EXTRA_IDS);
+        if (ids != null && !ids.isEmpty()) {
+            Exercise e = Data.byId(ids.split(",")[0]);
+            if (e != null) {
+                return e.name;
+            }
         }
         try {
             Data.Day d = Data.withOverrides(

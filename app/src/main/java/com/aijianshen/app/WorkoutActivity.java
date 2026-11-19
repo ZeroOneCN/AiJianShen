@@ -135,8 +135,6 @@ public class WorkoutActivity extends Activity {
     private int tipSeg = -1;
     /** 当前高亮到第几条要领。 */
     private int tipAt = -1;
-    /** 语音包缺失时为 true：此时不能把文字也藏起来，否则等于把提示删了。 */
-    private boolean voiceBroken = false;
     /** 本轮临时屏蔽的动作：用户按了「这一轮不再出现」。 */
     private final java.util.Set<String> mutedThisRound = new java.util.HashSet<>();
     private PopupWindow actionMenu;
@@ -685,7 +683,9 @@ public class WorkoutActivity extends Activity {
 
     /** 语音可用时，要领只走语音。 */
     private boolean speechOnly() {
-        return prefs != null && prefs.voice && !voiceBroken;
+        // 必须是「引擎真的就绪」才收文字：初始化失败或没有中文语音包时，
+        // 光看开关会先把画面清空，等回调再填回来，中间那一下是白的。
+        return prefs != null && prefs.voice && voice != null && voice.isReady();
     }
 
     /**
@@ -1343,10 +1343,8 @@ public class WorkoutActivity extends Activity {
 
     private void ensureVoice() {
         if (prefs.voice && voice == null) {
-            voiceBroken = false;
             voice = new Voice(this, (ok, status) -> {
-                // 语音起不来就把文字放回画面，不能让人对着空白自己猜
-                voiceBroken = !ok;
+                // 就绪后把文字收起来；起不来则文字一直留在画面上
                 runOnUiThread(this::applyTipMode);
             });
         } else if (!prefs.voice && voice != null) {

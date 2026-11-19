@@ -171,8 +171,9 @@ public class StreakActivity extends Activity {
         badge.addView(badgeBox, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         TextView bestView = new TextView(this);
-        // 当前就是历史最好时，徽章改说宽限天数，免得同一个数字出现两次
-        boolean showGrace = down || best <= st.days;
+        // 当前就是历史最好时，徽章改说宽限天数，免得同一个数字出现两次。
+        // 但从没练过的人（idle < 0）不该看到「2 天宽限」——他连 1 天都没有，宽限无从谈起。
+        boolean showGrace = st.idle >= 0 && (down || best <= st.days);
         bestView.setText(showGrace ? String.valueOf(Store.GRACE_DAYS) : String.valueOf(best));
         bestView.setTextColor(Color.WHITE);
         bestView.setTextSize(26);
@@ -237,9 +238,14 @@ public class StreakActivity extends Activity {
         monthLabel.setTextColor(Ui.INK);
         monthLabel.setTextSize(15);
         monthLabel.setGravity(Gravity.CENTER);
+        // 固定 104dp 宽在系统字体放大时会折成「2026 年 11 / 月」两行，
+        // 改成按内容撑开、单行不折，宽度不够时用省略号兜底，箭头位置才稳。
+        monthLabel.setSingleLine(true);
+        monthLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        monthLabel.setMinWidth(Ui.dpi(this, 104));
         Ui.font(monthLabel, 700);
         head.addView(monthLabel, new LinearLayout.LayoutParams(
-                Ui.dpi(this, 104), Ui.dpi(this, 36)));
+                ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 36)));
 
         TextView next = arrow("›");
         head.addView(next, new LinearLayout.LayoutParams(

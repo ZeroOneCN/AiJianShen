@@ -194,4 +194,15 @@
 
   </application>
 
+  <!--
+    Android 11 起默认看不到别的应用。语音要在默认引擎缺中文时退到系统里
+    其它 TTS 引擎，就必须声明能查询 TTS 服务，否则 queryIntentServices
+    永远返回空，等于放弃了这条路。
+  -->
+  <queries>
+    <intent>
+      <action android:name="android.intent.action.TTS_SERVICE" />
+    </intent>
+  </queries>
+
 </manifest>
