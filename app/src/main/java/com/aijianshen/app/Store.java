@@ -210,25 +210,87 @@ public final class Store {
 
     private static final String K_FEELS_LEGACY = "last_feel";
 
-    /** 从今天往前数连续完成的天数。 */
-    public static int streak(Context c) {
+    /** 宽限期：连着空几天还允许「接上」，超过才算真的断。 */
+    public static final int GRACE_DAYS = 2;
+
+    /**
+     * 连续训练状态。
+     *
+     * <p>以前昨天没练就直接归零，用户断一天看到的第一个数字是 0，
+     * 心里那句话是「算了」。现在留 2 天宽限：天数不清零，只是记下空档，
+     * 首页和连续页都明说还差几天，并给一个「3 分钟接上」的出口。
+     */
+    public static class Streak {
+        /** 计入连续的天数；超过宽限时为 0。 */
+        public int days;
+        /** 距上次训练几天：今天练过 0，从没练过 -1。 */
+        public int idle;
+        /** 实际空掉的整天数（今天还不算）。 */
+        public int absent;
+        public boolean todayDone;
+
+        public boolean broken() {
+            return idle >= 0 && absent > GRACE_DAYS;
+        }
+
+        /** 还差几天就真的断了；没断时为 0。 */
+        public int tillBreak() {
+            return broken() ? 0 : Math.max(0, GRACE_DAYS - absent);
+        }
+    }
+
+    public static Streak streakInfo(Context c) {
+        Streak s = new Streak();
         Set<String> dates = dates(c);
         if (dates.isEmpty()) {
-            return 0;
+            s.idle = -1;
+            return s;
         }
         Calendar cur = Calendar.getInstance();
-        if (!dates.contains(key(cur))) {
+        int idle = 0;
+        // 今天还没结束，先往前找最近一次训练；最多回看一年多，防止脏数据死循环
+        while (!dates.contains(key(cur)) && idle <= 400) {
+            idle++;
             cur.add(Calendar.DAY_OF_YEAR, -1);
-            if (!dates.contains(key(cur))) {
-                return 0;
+        }
+        if (idle > 400) {
+            s.idle = -1;
+            return s;
+        }
+        s.idle = idle;
+        s.absent = Math.max(0, idle - 1);
+        s.todayDone = idle == 0;
+        if (s.broken()) {
+            return s;
+        }
+        // 宽限期内：从最近一次训练那天往前严格连续地数
+        while (dates.contains(key(cur))) {
+            s.days++;
+            cur.add(Calendar.DAY_OF_YEAR, -1);
+        }
+        return s;
+    }
+
+    /** 当前连续天数（含 2 天宽限）。 */
+    public static int streak(Context c) {
+        return streakInfo(c).days;
+    }
+
+    /** 最近一次训练练的部位，用于「上次练到腿臀」这类文案；取不到时返回 null。 */
+    public static String lastPart(Context c) {
+        Data.init(c);
+        for (Session s : sessions(c)) {
+            if (s.ids == null || s.ids.isEmpty()) {
+                continue;
+            }
+            for (String id : s.ids.split(",")) {
+                Exercise e = Data.byId(id.trim());
+                if (e != null && e.part != null && !e.part.isEmpty()) {
+                    return e.part;
+                }
             }
         }
-        int n = 0;
-        while (dates.contains(key(cur))) {
-            n++;
-            cur.add(Calendar.DAY_OF_YEAR, -1);
-        }
-        return n;
+        return null;
     }
 
     /** 历史上最长的一段连续训练。 */

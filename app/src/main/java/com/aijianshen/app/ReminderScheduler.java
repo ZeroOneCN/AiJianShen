@@ -125,12 +125,42 @@ public final class ReminderScheduler {
         Notification.Builder b = Build.VERSION.SDK_INT >= 26
                 ? new Notification.Builder(c, CHANNEL)
                 : new Notification.Builder(c);
+        String[] copy = copy(c);
         b.setSmallIcon(R.drawable.ic_notify)
-                .setContentTitle("该练一会儿了")
-                .setContentText("今天的动作已经排好，花十几分钟动起来。")
+                .setContentTitle(copy[0])
+                .setContentText(copy[1])
                 .setContentIntent(pi)
                 .setAutoCancel(true)
                 .setShowWhen(true);
         nm.notify(NOTIFY_ID, b.build());
+    }
+
+    /**
+     * 提醒文案跟着状态走。
+     *
+     * <p>以前不管什么情况都是「今天的动作已经排好」，对断了两天的人等于又提醒一次
+     * 「你失败了」。现在断签时说清上次练到哪、三分钟就能接上。
+     */
+    private static String[] copy(Context c) {
+        try {
+            Store.Streak st = Store.streakInfo(c);
+            if (st.idle < 0) {
+                return new String[]{"该练一会儿了", "今天的动作已经排好，花十几分钟动起来。"};
+            }
+            if (st.todayDone) {
+                return new String[]{"今天已经练过了", "不用再补，明天这一步接着来。"};
+            }
+            String part = Store.lastPart(c);
+            String where = part == null ? "" : "上次练到" + part + "。";
+            if (st.broken()) {
+                return new String[]{"不用从头算", where + "今天动 3 分钟就回来了。"};
+            }
+            if (st.absent > 0) {
+                return new String[]{"接得上，别算了", where + "今天 3 分钟就算数。"};
+            }
+            return new String[]{"该练一会儿了", "今天的动作已经排好，花十几分钟动起来。"};
+        } catch (Exception e) {
+            return new String[]{"该练一会儿了", "今天的动作已经排好，花十几分钟动起来。"};
+        }
     }
 }

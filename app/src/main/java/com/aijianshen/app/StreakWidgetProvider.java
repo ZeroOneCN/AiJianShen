@@ -56,8 +56,11 @@ public class StreakWidgetProvider extends AppWidgetProvider {
 
         int todayIndex = Data.todayIndex(Calendar.getInstance());
         Set<String> dates = Store.dates(c);
-
-        v.setTextViewText(R.id.w_streak, String.valueOf(Store.streak(c)));
+        Store.Streak streak = Store.streakInfo(c);
+        int best = Store.bestStreak(c);
+        // 断了的小部件不摆 0，摆最长纪录——0 只会让人把图标拖掉
+        boolean down = streak.days == 0 && best > 0;
+        v.setTextViewText(R.id.w_streak, String.valueOf(down ? best : streak.days));
 
         if (!Store.hasProfile(c) && dates.isEmpty()) {
             v.setTextViewText(R.id.w_streak_unit, "天");
@@ -70,7 +73,7 @@ public class StreakWidgetProvider extends AppWidgetProvider {
             PlanProfile p = Store.profile(c);
             int done = Store.weekDone(c, todayIndex);
             int target = Math.max(1, p.days);
-            v.setTextViewText(R.id.w_streak_unit, "天连续");
+            v.setTextViewText(R.id.w_streak_unit, down ? "天最长" : "天连续");
             v.setTextViewText(R.id.w_week, "本周 " + done + "/" + target);
 
             Calendar cal = Calendar.getInstance();

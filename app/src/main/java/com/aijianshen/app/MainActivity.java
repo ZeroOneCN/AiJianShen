@@ -224,9 +224,25 @@ public class MainActivity extends Activity {
         startActivity(it);
     }
 
+    /** 断签状态下不给「0 天」，给最长纪录 + 今天就能做完的入口。 */
     private void renderStreak() {
-        int streak = Store.streak(this);
-        tvStreak.setText(streak + " 天");
+        Store.Streak s = Store.streakInfo(this);
+        int best = Store.bestStreak(this);
+        if (s.days > 0) {
+            tvStreak.setText(s.days + " 天");
+        } else if (best > 0) {
+            tvStreak.setText("最长 " + best + " 天");
+        } else {
+            tvStreak.setText("开始");
+        }
+    }
+
+    /**
+     * 3 分钟接上：优先用今天课表里的动作，让「接上」和计划对得上；
+     * 具体拼装在 {@link Rescue}，连续页也用同一套。
+     */
+    private void startRescue() {
+        Rescue.start(this);
     }
 
     private void renderWeekGoal() {
@@ -237,11 +253,15 @@ public class MainActivity extends Activity {
         weekStrip.removeAllViews();
         Calendar cal = Calendar.getInstance();
         Set<String> dates = Store.dates(this);
+        Store.Streak streak = Store.streakInfo(this);
         for (int i = 0; i < 7; i++) {
             Calendar d = (Calendar) cal.clone();
             d.add(Calendar.DAY_OF_YEAR, -(todayIndex - i));
             boolean today = i == todayIndex;
             boolean ok = dates.contains(Store.key(d));
+            // 宽限期内的空档：不是「没练」，是「还差一点就断了」，用浅灰点单独区分
+            int back = todayIndex - i;
+            boolean gap = !ok && back > 0 && back < streak.idle && !streak.broken();
 
             LinearLayout col = new LinearLayout(this);
             col.setOrientation(LinearLayout.VERTICAL);
@@ -263,7 +283,8 @@ public class MainActivity extends Activity {
             col.addView(num, new LinearLayout.LayoutParams(Ui.dpi(this, 36), Ui.dpi(this, 36)));
 
             View dot = new View(this);
-            dot.setBackground(Ui.round(this, ok ? Ui.ACCENT : 0x00000000, 3f));
+            dot.setBackground(Ui.round(this,
+                    ok ? Ui.ACCENT : (gap ? 0xFFBFC6D2 : 0x00000000), 3f));
             LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(
                     Ui.dpi(this, 5), Ui.dpi(this, 5));
             dlp.topMargin = Ui.dpi(this, 4);
@@ -278,6 +299,9 @@ public class MainActivity extends Activity {
         // 只要有没做完的存档就给入口。之前还要求「今天没练完」，
         // 结果是今天练过一次、又开了一次没做完的情况下，存档再也回不去了。
         boolean resume = pending != null;
+        Store.Streak streak = Store.streakInfo(this);
+        // 断签救援排在「今天练什么」前面：断了的人不缺计划，缺的是一个立刻能做完的动作
+        boolean rescue = !resume && !doneToday && streak.absent > 0;
 
         LinearLayout coach = findViewById(R.id.coach_row);
         IconView coachIcon = findViewById(R.id.icon_coach);
@@ -286,6 +310,16 @@ public class MainActivity extends Activity {
             // 上次没练完：把这一条变成「继续」入口，比让他自己在计划里找更直接
             int left = Math.max(1, pending.ids.size() - pending.index);
             copy = "上次「" + pending.title + "」还差一点，点这里接着练（剩 " + left + " 步）";
+            coachIcon.setIcon(IconView.PLAY);
+        } else if (rescue) {
+            String part = Store.lastPart(this);
+            if (streak.broken()) {
+                copy = "已经空了 " + streak.idle + " 天。不用从头算，动 3 分钟就回来了。";
+            } else if (part != null) {
+                copy = "上次练到" + part + "，今天 3 分钟就能接上，不算断。";
+            } else {
+                copy = "今天 3 分钟就能接上，不算断。";
+            }
             coachIcon.setIcon(IconView.PLAY);
         } else if (doneToday) {
             copy = "今天已经练完了。做几组拉伸，给身体一点收尾。";
@@ -302,11 +336,15 @@ public class MainActivity extends Activity {
         }
         coachIcon.setColor(Ui.ACCENT);
         tvCoach.setText(copy);
-        coach.setOnClickListener(resume
-                ? v -> startActivity(new Intent(this, WorkoutActivity.class)
-                .putExtra(WorkoutActivity.EXTRA_RESUME, true))
-                : null);
-        coach.setClickable(resume);
+        if (resume) {
+            coach.setOnClickListener(v -> startActivity(new Intent(this, WorkoutActivity.class)
+                    .putExtra(WorkoutActivity.EXTRA_RESUME, true)));
+        } else if (rescue) {
+            coach.setOnClickListener(v -> startRescue());
+        } else {
+            coach.setOnClickListener(null);
+        }
+        coach.setClickable(resume || rescue);
     }
 
     /**

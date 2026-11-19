@@ -243,7 +243,7 @@ public class PlanActivity extends Activity {
 
     private void renderMinutes() {
         int[] values = PlanProfile.MINUTE_VALUES;
-        int index = 1;
+        int index = 2;
         for (int i = 0; i < values.length; i++) {
             if (values[i] == profile.minutes) {
                 index = i;
@@ -256,7 +256,8 @@ public class PlanActivity extends Activity {
                     profile.minutes = values[i];
                     return profile.minutes + " 分钟";
                 });
-        addInfo("10 到 30 分钟都能安排，核心是动作质量和持续性。");
+        addInfo("3 到 30 分钟都能安排。3 分钟那条是给「今天实在没空」留的，"
+                + "不求练够，只求别断。");
     }
 
     private void renderGear() {

@@ -25,8 +25,10 @@ public class PlanProfile {
     public static final String[] LEVELS = {"新手", "进阶", "高手"};
     public static final String[] DAY_OPTIONS = {"2 天", "3 天", "4 天", "5 天", "6 天"};
     public static final int[] DAY_VALUES = {2, 3, 4, 5, 6};
-    public static final String[] MINUTE_OPTIONS = {"10 分钟", "15 分钟", "20 分钟", "30 分钟"};
-    public static final int[] MINUTE_VALUES = {10, 15, 20, 30};
+    /** 3 分钟不是「训练」而是「别断」：累到不想动的时候，只要求自己动起来。 */
+    public static final String[] MINUTE_OPTIONS = {
+            "3 分钟", "10 分钟", "15 分钟", "20 分钟", "30 分钟"};
+    public static final int[] MINUTE_VALUES = {3, 10, 15, 20, 30};
     public static final String[] GEAR_OPTIONS = {"徒手", "哑铃 / 弹力带", "单杠 / 长凳", "健身房"};
     public static final String[] FOCUS = {"全身", "核心", "腿臀", "胸背", "肩臂", "有氧"};
 
@@ -245,7 +247,14 @@ public class PlanProfile {
         p.goal = clamp(p.goal, GOALS.length);
         p.level = clamp(p.level, LEVELS.length);
         p.days = Math.max(2, Math.min(6, p.days));
-        if (p.minutes != 10 && p.minutes != 15 && p.minutes != 20 && p.minutes != 30) {
+        boolean minutesOk = false;
+        for (int v : MINUTE_VALUES) {
+            if (v == p.minutes) {
+                minutesOk = true;
+                break;
+            }
+        }
+        if (!minutesOk) {
             p.minutes = 15;
         }
         if (p.gearMask == 0) {

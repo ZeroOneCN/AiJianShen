@@ -23,6 +23,7 @@ public class StreakActivity extends Activity {
 
     private final Calendar month = Calendar.getInstance();
     private LinearLayout grid;
+    private LinearLayout body;
     private TextView monthLabel;
 
     @Override
@@ -39,7 +40,7 @@ public class StreakActivity extends Activity {
         ScrollView sc = new ScrollView(this);
         sc.setVerticalScrollBarEnabled(false);
         sc.setClipToPadding(false);
-        LinearLayout body = new LinearLayout(this);
+        body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         int p = Ui.dpi(this, 20);
         body.setPadding(p, Ui.dpi(this, 4), p, Ui.dpi(this, 24));
@@ -47,10 +48,33 @@ public class StreakActivity extends Activity {
         root.addView(sc, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        body.addView(streakHero());
+        render();
+    }
+
+    /** 从「3 分钟接上」练完回来要立刻看到新数字，所以整页按当前记录重建。 */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (body != null) {
+            render();
+        }
+    }
+
+    private void render() {
+        body.removeAllViews();
+        body.addView(streakHero(), new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         body.addView(calendarCard(), cardLp());
-        UiList.hint(this, body, "连续天数从今天往前计算；中间断一天也没关系，"
-                + "历史记录会一直留在这台设备上。");
+        Store.Streak st = Store.streakInfo(this);
+        String note;
+        if (st.absent > 0) {
+            note = "连续天数留了 " + Store.GRACE_DAYS + " 天宽限：中间停一两天不清零，"
+                    + "日历上会用浅灰点标出来。今天动 3 分钟就能接上。";
+        } else {
+            note = "连续天数从今天往前计算；停一两天也不会清零，"
+                    + "日历上会用浅灰点标出停过的那几天。";
+        }
+        UiList.hint(this, body, note);
     }
 
     private LinearLayout.LayoutParams cardLp() {
@@ -61,6 +85,12 @@ public class StreakActivity extends Activity {
     }
 
     private FrameLayout streakHero() {
+        Store.Streak st = Store.streakInfo(this);
+        int best = Store.bestStreak(this);
+        // 真的断了就先给最长纪录，别让页面第一个数字是 0
+        boolean down = st.days == 0 && best > 0;
+        int hero = down ? best : st.days;
+
         FrameLayout card = new FrameLayout(this);
         card.setBackground(Ui.gradientStreak(this));
         card.setClipToOutline(true);
@@ -78,7 +108,7 @@ public class StreakActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
 
         TextView cap = new TextView(this);
-        cap.setText("当前连续");
+        cap.setText(down ? "最长连续" : (st.absent > 0 ? "还接得上" : "当前连续"));
         cap.setTextColor(Ui.WHITE_80);
         cap.setTextSize(13);
         Ui.font(cap, 500);
@@ -90,7 +120,7 @@ public class StreakActivity extends Activity {
         num.setPadding(0, Ui.dpi(this, 2), 0, 0);
         left.addView(num);
         TextView n = new TextView(this);
-        n.setText(String.valueOf(Store.streak(this)));
+        n.setText(String.valueOf(hero));
         n.setTextColor(Color.WHITE);
         n.setTextSize(58);
         n.setIncludeFontPadding(false);
@@ -105,12 +135,31 @@ public class StreakActivity extends Activity {
         num.addView(unit);
 
         TextView tip = new TextView(this);
-        int streak = Store.streak(this);
-        tip.setText(streak > 0 ? "今天已经动过了，保持住。" : "完成今天的一次训练，从这里开始。");
+        tip.setText(tipText(st, down));
         tip.setTextColor(Ui.WHITE_80);
         tip.setTextSize(12);
+        tip.setLineSpacing(Ui.dp(this, 2), 1f);
         Ui.font(tip, 400);
         left.addView(tip);
+
+        // 断过的人最需要的是「现在就能动一下」，而不是一句总结
+        if (st.absent > 0 && st.idle >= 0) {
+            TextView go = new TextView(this);
+            go.setText("3 分钟接上  ›");
+            go.setTextColor(Ui.ACCENT);
+            go.setTextSize(13);
+            go.setGravity(Gravity.CENTER);
+            go.setIncludeFontPadding(false);
+            go.setPadding(Ui.dpi(this, 16), 0, Ui.dpi(this, 16), 0);
+            go.setBackground(Ui.ripple(this,
+                    Ui.round(this, Color.WHITE, 18f), 0x22000000));
+            Ui.font(go, 700);
+            LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, Ui.dpi(this, 36));
+            glp.topMargin = Ui.dpi(this, 12);
+            left.addView(go, glp);
+            go.setOnClickListener(v -> Rescue.start(this));
+        }
 
         FrameLayout badge = new FrameLayout(this);
         badge.setBackground(Ui.round(this, 0x2EFFFFFF, 24f));
@@ -121,22 +170,40 @@ public class StreakActivity extends Activity {
         badgeBox.setGravity(Gravity.CENTER);
         badge.addView(badgeBox, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        TextView best = new TextView(this);
-        best.setText(String.valueOf(Store.bestStreak(this)));
-        best.setTextColor(Color.WHITE);
-        best.setTextSize(26);
-        best.setIncludeFontPadding(false);
-        best.setGravity(Gravity.CENTER);
-        Ui.font(best, 800);
-        badgeBox.addView(best);
+        TextView bestView = new TextView(this);
+        // 当前就是历史最好时，徽章改说宽限天数，免得同一个数字出现两次
+        boolean showGrace = down || best <= st.days;
+        bestView.setText(showGrace ? String.valueOf(Store.GRACE_DAYS) : String.valueOf(best));
+        bestView.setTextColor(Color.WHITE);
+        bestView.setTextSize(26);
+        bestView.setIncludeFontPadding(false);
+        bestView.setGravity(Gravity.CENTER);
+        Ui.font(bestView, 800);
+        badgeBox.addView(bestView);
         TextView bestLabel = new TextView(this);
-        bestLabel.setText("最长连续 / 天");
+        bestLabel.setText(showGrace ? "天宽限" : "最长连续 / 天");
         bestLabel.setTextColor(Ui.WHITE_60);
         bestLabel.setTextSize(10);
+        bestLabel.setMaxLines(1);
         bestLabel.setGravity(Gravity.CENTER);
         Ui.font(bestLabel, 400);
         badgeBox.addView(bestLabel);
         return card;
+    }
+
+    private String tipText(Store.Streak st, boolean down) {
+        if (st.idle < 0) {
+            return "完成今天的一次训练，从这里开始。";
+        }
+        if (down) {
+            return "空了 " + st.idle + " 天。今天动 3 分钟，不用从头算。";
+        }
+        if (st.absent > 0) {
+            int left = st.tillBreak();
+            return left <= 0 ? "今天再不练就断了，3 分钟也算数。"
+                    : "再停 " + left + " 天就断了，今天接上就好。";
+        }
+        return st.todayDone ? "今天已经动过了，保持住。" : "今天还没练，现在开始正好。";
     }
 
     private LinearLayout calendarCard() {
@@ -231,6 +298,7 @@ public class StreakActivity extends Activity {
         Set<String> done = Store.dates(this);
         Calendar today = Calendar.getInstance();
         String todayKey = Store.key(today);
+        Store.Streak st = Store.streakInfo(this);
 
         LinearLayout row = null;
         int slot = 0;
@@ -254,7 +322,8 @@ public class StreakActivity extends Activity {
             boolean ok = done.contains(key);
             boolean isToday = key.equals(todayKey);
             boolean future = day.after(today);
-            row.addView(cell(d, day, key, ok, isToday, future), cellLp(slot));
+            boolean gap = !ok && !isToday && !future && withinGap(day, today, st);
+            row.addView(cell(d, day, key, ok, isToday, future, gap), cellLp(slot));
             slot++;
             if (slot == 7) {
                 slot = 0;
@@ -284,8 +353,26 @@ public class StreakActivity extends Activity {
         return lp;
     }
 
+    /** 这一天是不是宽限期里空掉的那几天：最近一次训练之后、今天之前。 */
+    private boolean withinGap(Calendar day, Calendar today, Store.Streak st) {
+        if (st.idle <= 1 || st.broken()) {
+            return false;
+        }
+        long diff = dayStart(today) - dayStart(day);
+        return diff > 0 && diff < st.idle * 86400000L;
+    }
+
+    private long dayStart(Calendar c) {
+        Calendar x = (Calendar) c.clone();
+        x.set(Calendar.HOUR_OF_DAY, 0);
+        x.set(Calendar.MINUTE, 0);
+        x.set(Calendar.SECOND, 0);
+        x.set(Calendar.MILLISECOND, 0);
+        return x.getTimeInMillis();
+    }
+
     private TextView cell(int d, Calendar day, String key, boolean ok,
-                          boolean today, boolean future) {
+                          boolean today, boolean future, boolean gap) {
         TextView tv = new TextView(this);
         tv.setText(String.valueOf(d));
         tv.setTextSize(13);
@@ -298,6 +385,10 @@ public class StreakActivity extends Activity {
             tv.setTextColor(Ui.ACCENT);
             tv.setBackground(Ui.roundStroke(this, 0x00000000, 14f, Ui.ACCENT_RING));
             Ui.font(tv, 700);
+        } else if (gap) {
+            tv.setTextColor(0xFF7E8792);
+            tv.setBackground(Ui.round(this, 0xFFEDEFF4, 14f));
+            Ui.font(tv, 500);
         } else {
             tv.setTextColor(future ? 0xFFC4C9D0 : Ui.INK_SOFT);
             Ui.font(tv, 400);

@@ -134,7 +134,10 @@ public class ReportActivity extends Activity {
         fillStat(findViewById(R.id.stat_col_2), IconView.FLAME, String.valueOf(kcal), "千卡");
         fillStat(findViewById(R.id.stat_col_3), IconView.CLOCK, String.valueOf(minutes), "分钟");
 
-        tvStreak.setText(Store.streak(this) + " 天");
+        Store.Streak streak = Store.streakInfo(this);
+        int best = Store.bestStreak(this);
+        tvStreak.setText(streak.days > 0 ? streak.days + " 天"
+                : (best > 0 ? "最长 " + best + " 天" : "0 天"));
 
         weekStrip.removeAllViews();
         Calendar cal = Calendar.getInstance();
