@@ -103,7 +103,7 @@ public class WorkoutSettingsActivity extends Activity {
                     }
                 }).toggle.setChecked(prefs.vibrate);
         UiList.row(this, media, IconView.SPEAKER, Ui.ACCENT, "语音口令",
-                "用系统 TTS 播报预备、休息和完成", false, null,
+                "播报动作名、要领和休息时长；关掉后要领回到画面上", false, null,
                 (b, on) -> {
                     if (initializing) return;
                     prefs.voice = on;
@@ -183,7 +183,7 @@ public class WorkoutSettingsActivity extends Activity {
 
         UiList.hint(this, body,
                 "选中的音乐会复制一份到应用内，删除原文件也不影响播放；不会上传。"
-                        + "语音口令依赖系统 TTS 中文语音包。");
+                        + "语音口令依赖系统 TTS 中文语音包；没有语音包时会自动把要领显示回画面。");
 
         TextView done = UiList.primary(this, "完成");
         LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(

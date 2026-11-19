@@ -135,6 +135,8 @@ public class WorkoutActivity extends Activity {
     private int tipSeg = -1;
     /** 当前高亮到第几条要领。 */
     private int tipAt = -1;
+    /** 语音包缺失时为 true：此时不能把文字也藏起来，否则等于把提示删了。 */
+    private boolean voiceBroken = false;
     /** 本轮临时屏蔽的动作：用户按了「这一轮不再出现」。 */
     private final java.util.Set<String> mutedThisRound = new java.util.HashSet<>();
     private PopupWindow actionMenu;
@@ -231,6 +233,9 @@ public class WorkoutActivity extends Activity {
 
         Ui.font(tvState, 800);
         Ui.font(tvExercise, 700);
+        // 要领收成语音之后，画面里不再常驻文字；点动作名随时能看全步骤
+        tvExercise.setOnClickListener(v -> showHelp());
+        tvExercise.setClickable(true);
         Ui.font(tvSet, 600);
         Ui.font(tvToggle, 700);
         Ui.font(tvTitle, 600);
@@ -603,6 +608,10 @@ public class WorkoutActivity extends Activity {
     }
 
     private void cue(int kind, int vibrateMs, String say) {
+        if (say != null && !say.isEmpty()) {
+            // 语音念出来的内容留一条记录：没装语音包时也能在 logcat 核对报的是什么
+            android.util.Log.d("aijianshen-voice", say);
+        }
         if (prefs.sound) {
             cues.play(kind);
         }
@@ -621,9 +630,82 @@ public class WorkoutActivity extends Activity {
         lastCuedStep = i;
         Step s = steps.get(i);
         if (s.rest) {
-            cue(WorkoutCues.REST, 30, "休息");
+            // 休息时报「歇多久 + 下一个是谁」，比单说一句「休息」有用：
+            // 手上有汗、腾不出眼睛看屏幕的时候，这两条是唯一信息来源。
+            String next = nextName(i);
+            String say = s.total > 0 ? "休息 " + s.total + " 秒" : "休息";
+            cue(WorkoutCues.REST, 30, next == null ? say : say + "，下一个，" + next);
         } else {
-            cue(WorkoutCues.START, 60, s.exercise.name);
+            // 动作名和第一条要领一次念完：分两次 speak 会被 QUEUE_FLUSH 掐断，听感是卡顿
+            String tip = tipLine(s.exercise, 0);
+            cue(WorkoutCues.START, 60,
+                    tip.isEmpty() ? s.exercise.name : s.exercise.name + "。" + tip);
+        }
+    }
+
+    /** 休息之后第一个能做的动作名；都被屏蔽了就是 null。 */
+    private String nextName(int from) {
+        for (int k = from + 1; k < steps.size(); k++) {
+            Step nx = steps.get(k);
+            if (!nx.rest && nx.total > 0) {
+                return nx.exercise.name;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 要领转成能念的一句话：去掉「首先」「然后」这种书面连接词，
+     * 只在句号/分号处收尾，太长才硬截。念出来的东西必须短，
+     * 否则一句话还没读完，这个动作已经过半了。
+     */
+    private static String tipLine(Exercise e, int index) {
+        if (e.steps == null || index < 0 || index >= e.steps.size()) {
+            return "";
+        }
+        String s = e.steps.get(index).trim();
+        for (String drop : new String[]{"首先，", "首先", "然后，", "然后", "接着，", "接着"}) {
+            if (s.startsWith(drop)) {
+                s = s.substring(drop.length());
+            }
+        }
+        int cut = -1;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '。' || c == '；') {
+                cut = i;
+                break;
+            }
+        }
+        if (cut > 4) {
+            s = s.substring(0, cut);
+        }
+        return s.length() > 42 ? s.substring(0, 42) : s;
+    }
+
+    /** 语音可用时，要领只走语音。 */
+    private boolean speechOnly() {
+        return prefs != null && prefs.voice && !voiceBroken;
+    }
+
+    /**
+     * 要领默认不占画面：训练时眼睛要盯着身体，屏幕上的字没人读。
+     * 但语音被关掉、或者这台机器没有中文语音包时，必须把文字放回来。
+     */
+    private void applyTipMode() {
+        if (tvTip == null) {
+            return;
+        }
+        boolean hide = speechOnly();
+        tvTip.setVisibility(hide ? View.GONE : View.VISIBLE);
+        if (!hide && steps != null && index >= 0 && index < steps.size()) {
+            // 刚把文字放回来：内容得立刻补上，不能等下一次 tick
+            Step s = steps.get(index);
+            if (s.rest) {
+                tvTip.setText("调整呼吸，下一个动作马上开始。");
+            } else if (!finished) {
+                paintSteps(s);
+            }
         }
     }
 
@@ -688,7 +770,9 @@ public class WorkoutActivity extends Activity {
     private void paintSteps(Step s) {
         List<String> list = s.exercise.steps;
         if (list == null || list.size() < 2 || s.total <= 0) {
-            tvTip.setText(s.exercise.brief());
+            if (!speechOnly()) {
+                tvTip.setText(s.exercise.brief());
+            }
             tipSeg = -1;
             tipAt = -1;
             return;
@@ -696,7 +780,10 @@ public class WorkoutActivity extends Activity {
         int seg = Math.max(1, s.total / list.size());
         tipSeg = seg;
         tipAt = 0;
-        tvTip.setSteps(list, 0, seg);
+        // 文字收起来时不再建行：GONE 的视图照样会走 measure/layout，白花时间
+        if (!speechOnly()) {
+            tvTip.setSteps(list, 0, seg);
+        }
     }
 
     /** tick 里推进高亮：只在跨过一条要领时重绘。 */
@@ -712,7 +799,15 @@ public class WorkoutActivity extends Activity {
         int act = Math.min(list.size() - 1, passed / tipSeg);
         if (act != tipAt) {
             tipAt = act;
-            tvTip.setSteps(list, act, tipSeg);
+            if (!speechOnly()) {
+                tvTip.setSteps(list, act, tipSeg);
+            }
+            // 第 0 条已经跟动作名一起念过了，这里只补后面的；
+            // 也只念前三条——念太多会盖住「还剩几秒」这类更要紧的节奏信息
+            if (act > 0 && act < 3 && speechOnly() && voice != null
+                    && !paused && !finished) {
+                voice.speakNext(tipLine(s.exercise, act));
+            }
         }
     }
 
@@ -885,6 +980,9 @@ public class WorkoutActivity extends Activity {
                 }
             }
             handler.removeCallbacks(tick);
+            if (voice != null) {
+                voice.stop(); // 暂停了就别继续念要领
+            }
         } else {
             if (leadIn) {
                 // 预备倒计时不算训练时长，恢复后仍旧不计
@@ -1245,12 +1343,17 @@ public class WorkoutActivity extends Activity {
 
     private void ensureVoice() {
         if (prefs.voice && voice == null) {
+            voiceBroken = false;
             voice = new Voice(this, (ok, status) -> {
+                // 语音起不来就把文字放回画面，不能让人对着空白自己猜
+                voiceBroken = !ok;
+                runOnUiThread(this::applyTipMode);
             });
         } else if (!prefs.voice && voice != null) {
             voice.shutdown();
             voice = null;
         }
+        applyTipMode();
     }
 
     // ---- 音乐与音频焦点 ----
@@ -1425,6 +1528,9 @@ public class WorkoutActivity extends Activity {
     }
 
     private void showHelp() {
+        if (index < 0 || index >= steps.size()) {
+            return;
+        }
         Step s = steps.get(index);
         Exercise e = s.exercise;
         Dialog dialog = new Dialog(this);

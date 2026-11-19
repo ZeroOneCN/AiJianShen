@@ -661,6 +661,7 @@ public class PlanActivity extends Activity {
         summary.setText("目标 · " + profile.goalLabel()
                 + "\n每周 " + profile.days + " 练 · 每次 " + profile.minutes + " 分钟"
                 + "\n" + focusSummary() + " · " + profile.gearSummary()
+                + "\n能力 · " + profile.levelLabel()
                 + "\n\n计划只保存在这台设备上，随时可以回来调整。");
         summary.setTextColor(Ui.INK_MUTED);
         summary.setTextSize(13.5f);

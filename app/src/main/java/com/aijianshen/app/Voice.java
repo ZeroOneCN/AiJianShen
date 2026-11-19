@@ -58,11 +58,35 @@ public final class Voice implements TextToSpeech.OnInitListener {
     }
 
     public void speak(String text) {
+        say(text, TextToSpeech.QUEUE_FLUSH);
+    }
+
+    /**
+     * 排队播报，接在当前这句话后面念完，不打断。
+     * 要领这种「动作名之后接着说两条」的场景必须用它：
+     * FLUSH 会把刚念到一半的动作名掐掉，听感是卡顿和重复。
+     */
+    public void speakNext(String text) {
+        say(text, TextToSpeech.QUEUE_ADD);
+    }
+
+    private void say(String text, int mode) {
         if (!ready || tts == null || text == null || text.isEmpty()) {
             return;
         }
         try {
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "aijianshen");
+            tts.speak(text, mode, null, "aijianshen");
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /** 换动作、暂停时把还没念完的旧口令清掉，避免「上一个动作」的提示拖到下一步。 */
+    public void stop() {
+        if (tts == null) {
+            return;
+        }
+        try {
+            tts.stop();
         } catch (Throwable ignored) {
         }
     }
