@@ -480,12 +480,14 @@ public class WorkoutActivity extends Activity {
             }
         }
         int rounds = custom ? customRounds : (single != null ? 1 : day.rounds);
-        int seconds = custom && customSeconds > 0 ? customSeconds
-                : (single != null ? list.get(0).seconds : day.seconds);
+        int fixed = custom && customSeconds > 0 ? customSeconds : 0;
         int rest = prefs.restFor(custom && customRest >= 0 ? customRest : day.restSeconds);
         for (int r = 0; r < rounds; r++) {
             for (int i = 0; i < list.size(); i++) {
                 Exercise e = list.get(i);
+                // 每个动作按自己的部位取秒数：同一天深蹲 40 秒、俯卧撑 25 秒是正常的
+                int seconds = fixed > 0 ? fixed
+                        : (single != null ? list.get(0).seconds : day.secondsFor(e));
                 steps.add(new Step(false, e, seconds));
                 boolean last = r == rounds - 1 && i == list.size() - 1;
                 if (!last) {
@@ -1123,19 +1125,20 @@ public class WorkoutActivity extends Activity {
             }
         }
         show(index);
-        boolean shorter = pick.seconds <= from.seconds;
-        Toast.makeText(this, shorter
-                        ? "已换成「" + pick.name + "」，以后也按这个排"
-                        : "这个部位没有更短的，先换成「" + pick.name + "」",
+        boolean lower = pick.difficulty() < from.difficulty();
+        Toast.makeText(this, lower
+                        ? "已换成「" + pick.name + "」，更简单一档，以后也按这个排"
+                        : "这个部位没有更简单的了，先换成「" + pick.name + "」",
                 Toast.LENGTH_SHORT).show();
     }
 
     /**
-     * 同部位、不增加器械要求、时间更短的里面取最接近的一个：
-     * 降一档而不是直接降到地板，否则练起来像换了个项目。
+     * 同部位、不增加器械要求、难度更低的里面取最接近的一个。
      *
-     * 动作库没有难度分级，只能用秒数当代理——但同部位常常全是 40 秒，
-     * 一个都挑不出来。所以第二轮放宽成"时长最接近的"，宁可换平级也不让人卡住。
+     * 上一版拿秒数当难度代理，但同部位常常全是 40 秒，一个都挑不出来。
+     * 现在用 Exercise.difficulty() 的命名推断：目标难度取「用户这条曲线的等级」
+     * 与「当前动作难度 - 1」里更低的那个，降一档而不是直接降到地板。
+     * 实在没有更简单的，退回同部位时长最接近的，宁可换平级也不让人卡住。
      */
     private Exercise findEasier(Exercise from) {
         List<Exercise> pool = Data.byPart(from.part);
@@ -1143,6 +1146,10 @@ public class WorkoutActivity extends Activity {
             pool = Data.all();
         }
         java.util.Set<String> blocked = Store.blocked(this);
+        int cap = Store.profile(this).levelOfPart(from.part);
+        int fromD = from.difficulty();
+        int target = Math.max(1, Math.min(cap, fromD - 1));
+
         Exercise best = null;
         int bestScore = Integer.MAX_VALUE;
         for (Exercise e : pool) {
@@ -1152,11 +1159,15 @@ public class WorkoutActivity extends Activity {
             if (!from.needsGear() && e.needsGear()) {
                 continue;
             }
-            if (e.seconds >= from.seconds) {
-                continue;
+            int d = e.difficulty();
+            if (d >= fromD) {
+                continue; // 不比现在简单就不算「换个简单的」
             }
-            // 类型不同罚 60 秒：优先同类型里最接近的，实在没有再看别的
-            int score = (from.seconds - e.seconds) + (e.kind.equals(from.kind) ? 0 : 60);
+            // 超出用户等级的候选往后排：L2 的人不该被换到 L4 的动作上
+            int score = Math.abs(d - target) * 10
+                    + (d > cap ? 20 : 0)
+                    + (e.kind.equals(from.kind) ? 0 : 3)
+                    + Math.abs(e.seconds - from.seconds) / 20;
             if (score < bestScore) {
                 bestScore = score;
                 best = e;
@@ -1165,7 +1176,7 @@ public class WorkoutActivity extends Activity {
         if (best != null) {
             return best;
         }
-        // 没有更短的：退一步给同部位时长最接近的
+        // 没有更简单的：退一步给同部位时长最接近的
         bestScore = Integer.MAX_VALUE;
         for (Exercise e : pool) {
             if (e.id.equals(from.id) || blocked.contains(e.id)) {

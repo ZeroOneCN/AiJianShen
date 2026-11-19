@@ -28,6 +28,7 @@ public class WorkoutSettingsActivity extends Activity {
     private Store.WorkoutPrefs prefs;
     private UiList.Row prepRow;
     private UiList.Row restRow;
+    private UiList.Row levelRow;
     private UiList.Row musicRow;
     private TextView clearMusic;
     private Voice testVoice;
@@ -70,6 +71,14 @@ public class WorkoutSettingsActivity extends Activity {
                 "预备倒计时", prepText(), false, v -> choosePrep());
         restRow = UiList.row(this, rhythm, IconView.CLOCK, Ui.ACCENT,
                 "休息时长", restText(), true, v -> chooseRest());
+
+        UiList.label(this, body, "能力等级");
+        LinearLayout levelCard = UiList.card(this);
+        body.addView(levelCard, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        levelRow = UiList.row(this, levelCard, IconView.CHART, Ui.ACCENT,
+                "分部位等级", levelText(), true, v -> startActivity(
+                        new Intent(this, SelfTestActivity.class)));
 
         UiList.label(this, body, "声音与画面");
         LinearLayout media = UiList.card(this);
@@ -189,6 +198,20 @@ public class WorkoutSettingsActivity extends Activity {
 
     private String prepText() {
         return prefs.prepSeconds <= 0 ? "关闭，直接开始" : prefs.prepSeconds + " 秒";
+    }
+
+    /** 自测页回来后不必重建整页，只刷新这一行的摘要。 */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (levelRow != null) {
+            levelRow.sub.setText(levelText());
+        }
+    }
+
+    private String levelText() {
+        PlanProfile p = Store.profile(this);
+        return p.levelLine() + " · 点按重测";
     }
 
     private String restText() {

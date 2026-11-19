@@ -85,6 +85,28 @@ public class PlanActivity extends Activity {
         renderStep();
     }
 
+    /**
+     * 从自测页回来时，把结果同步进当前编辑中的副本。
+     * 用户可能测到一半又改了别的步骤，所以只覆盖等级，其余保持原样。
+     */
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (body == null) {
+            return;
+        }
+        PlanProfile saved = Store.profile(this);
+        if (saved.levelMask() == profile.levelMask()) {
+            return;
+        }
+        System.arraycopy(saved.partLevels, 0, profile.partLevels, 0,
+                profile.partLevels.length);
+        profile.level = saved.level;
+        if (step == STEP_LEVEL) {
+            renderStep();
+        }
+    }
+
     private void renderStep() {
         String[] section = SECTIONS[step];
         ((TextView) findViewById(R.id.tv_section_no)).setText(section[0]);
@@ -164,23 +186,79 @@ public class PlanActivity extends Activity {
     }
 
     private void renderLevel() {
+        // 分部位等级是这一页的重点：先给一条「测一下」的路，再给统一档位
+        LinearLayout test = new LinearLayout(this);
+        test.setOrientation(LinearLayout.VERTICAL);
+        test.setBackground(Ui.ripple(this,
+                Ui.roundStroke(this, Ui.ACCENT_SOFT, Ui.R_CARD, Ui.ACCENT), 0x22000000));
+        int tp = Ui.dpi(this, 16);
+        test.setPadding(tp, tp, tp, tp);
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.bottomMargin = Ui.dpi(this, 12);
+        body.addView(test, tlp);
+
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.HORIZONTAL);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        test.addView(head);
+        TextView t = new TextView(this);
+        t.setText("1 分钟自测");
+        t.setTextColor(Ui.ACCENT);
+        t.setTextSize(17);
+        Ui.font(t, 700);
+        head.addView(t, new LinearLayout.LayoutParams(0,
+                ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView arrow = new TextView(this);
+        arrow.setText("›");
+        arrow.setTextColor(Ui.ACCENT);
+        arrow.setTextSize(20);
+        arrow.setIncludeFontPadding(false);
+        Ui.font(arrow, 500);
+        head.addView(arrow);
+
+        TextView line = new TextView(this);
+        line.setText(profile.partLevelsSet() ? profile.levelLine()
+                : "三个动作，分别定胸背、腿臀、核心");
+        line.setTextColor(Ui.INK);
+        line.setTextSize(13.5f);
+        line.setPadding(0, Ui.dpi(this, 6), 0, 0);
+        Ui.font(line, profile.partLevelsSet() ? 600 : 400);
+        test.addView(line);
+
+        TextView sub = new TextView(this);
+        sub.setText(profile.partLevelsSet()
+                ? "点一下重测；往下也能用统一档位一把拉平"
+                : "上肢弱、下肢强的人，测完才不会一起被平均");
+        sub.setTextColor(Ui.INK_SOFT);
+        sub.setTextSize(12);
+        sub.setPadding(0, Ui.dpi(this, 3), 0, 0);
+        Ui.font(sub, 400);
+        test.addView(sub);
+        test.setOnClickListener(v -> startActivity(
+                new Intent(this, SelfTestActivity.class)));
+
         String[] subs = {
-                "刚开始，先建立稳定的训练习惯",
-                "练过一阵，能跟上连续的动作节奏",
-                "动作熟练，想要更强的刺激"
+                "三条曲线统一 L2 · 刚起步",
+                "三条曲线统一 L3 · 练过一阵",
+                "三条曲线统一 L4 · 想要更强刺激"
         };
         for (int i = 0; i < PlanProfile.LEVELS.length; i++) {
             final int idx = i;
+            int lv = 2 + idx; // 新手 L2 · 进阶 L3 · 高手 L4
+            boolean uniform = profile.levelOfSlot(0) == profile.levelOfSlot(1)
+                    && profile.levelOfSlot(1) == profile.levelOfSlot(2);
             addOptionCard(PlanProfile.LEVELS[i], subs[i],
                     i == 0 ? IconView.USER : i == 1 ? IconView.CHART : IconView.TROPHY,
                     Ui.ACCENT,
-                    profile.level == i, v -> {
-                        profile.level = idx;
+                    uniform && profile.levelOfSlot(0) == lv, v -> {
+                        profile.applyLevels(lv, lv, lv);
                         renderStep();
                         handler.postDelayed(this::autoNext, 170);
                     });
         }
-        addInfo("新手动作 30 秒、进阶 40 秒、高手 50 秒；组间休息也会按目标调整。");
+        addInfo("测过之后，这里点一下会把三条重新拉平；只想改其中一条，"
+                + "去「训练设置 · 能力等级」重测或单独调整。");
     }
 
     /**
@@ -544,6 +622,7 @@ public class PlanActivity extends Activity {
 
     private void finishPlan() {
         Store.saveProfile(this, profile);
+        Data.clearPlanCache();
         showResult();
     }
 

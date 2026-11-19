@@ -169,7 +169,7 @@ public class DiscoverActivity extends Activity {
         text.addView(name);
 
         TextView sub = new TextView(this);
-        sub.setText(day.count() + " 个动作 · 约 " + day.minutes() + " 分钟 · "
+        sub.setText(day.count() + " 个动作 · 约 " + day.minutes() + " 分钟 · 能力 "
                 + profile.levelLabel());
         sub.setTextColor(Ui.INK_SOFT);
         sub.setTextSize(13);

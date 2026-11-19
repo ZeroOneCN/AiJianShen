@@ -151,8 +151,19 @@ public final class Data {
         /** 动作之间的休息秒数 */
         public final int restSeconds;
 
+        /**
+         * 排这套计划时的条件：每个动作的实际秒数按它自己的部位取。
+         * 恢复日等场景允许为 null，此时退回统一的 seconds。
+         */
+        private final PlanProfile profile;
+
         Day(String title, String focus, List<Exercise> exercises, boolean rest,
             int rounds, int seconds, int restSeconds) {
+            this(title, focus, exercises, rest, rounds, seconds, restSeconds, null);
+        }
+
+        Day(String title, String focus, List<Exercise> exercises, boolean rest,
+            int rounds, int seconds, int restSeconds, PlanProfile profile) {
             this.title = title;
             this.focus = focus;
             this.exercises = exercises;
@@ -160,6 +171,15 @@ public final class Data {
             this.rounds = Math.max(1, rounds);
             this.seconds = seconds;
             this.restSeconds = restSeconds;
+            this.profile = profile;
+        }
+
+        /** 单个动作该练多少秒：深蹲 40 秒、俯卧撑 25 秒可以是同一天。 */
+        public int secondsFor(Exercise e) {
+            if (profile == null || e == null) {
+                return seconds;
+            }
+            return profile.secondsFor(e.part);
         }
 
         public int count() {
@@ -171,11 +191,14 @@ public final class Data {
         }
 
         public int totalSeconds() {
-            int sets = totalSets();
-            if (sets == 0) {
+            if (exercises.isEmpty()) {
                 return 0;
             }
-            return sets * seconds + (sets - 1) * restSeconds;
+            int sum = 0;
+            for (Exercise e : exercises) {
+                sum += secondsFor(e) * rounds;
+            }
+            return sum + (totalSets() - 1) * restSeconds;
         }
 
         public int minutes() {
@@ -321,7 +344,8 @@ public final class Data {
 
     private static String planKey(PlanProfile p, int week) {
         return week + "|" + p.seed() + "|" + p.goal + "|" + p.level + "|" + p.days
-                + "|" + p.minutes + "|" + p.gearMask + "|" + p.focusMask();
+                + "|" + p.minutes + "|" + p.gearMask + "|" + p.focusMask()
+                + "|" + p.levelMask();
     }
 
     /** 条件变了（例如在定制页改完保存）时清掉缓存。 */
@@ -354,7 +378,8 @@ public final class Data {
             }
             list.add(chosen);
         }
-        return new Day(d.title, d.focus, list, d.rest, d.rounds, d.seconds, d.restSeconds);
+        return new Day(d.title, d.focus, list, d.rest, d.rounds, d.seconds,
+                d.restSeconds, d.profile);
     }
 
     private static Day trainingDay(PlanProfile p, int dayIndex, int seed) {
@@ -402,9 +427,9 @@ public final class Data {
             }
         }
 
-        int seconds = p.goal == 3 ? 50 + p.level * 10 : p.exerciseSeconds();
+        int seconds = p.goal == 3 ? 50 + (p.avgLevel() - 3) * 10 : p.exerciseSeconds();
         return new Day(theme.title, theme.label, picked, false,
-                p.rounds(), seconds, p.restSeconds());
+                p.rounds(), seconds, p.restSeconds(), p);
     }
 
     private static Day recoveryDay(PlanProfile p, int dayIndex, int seed) {

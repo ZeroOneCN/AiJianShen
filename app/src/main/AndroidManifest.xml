@@ -124,6 +124,11 @@
             android:screenOrientation="portrait" />
 
         <activity
+            android:name=".SelfTestActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
+        <activity
             android:name=".GeneralSettingsActivity"
             android:exported="false"
             android:screenOrientation="portrait" />

@@ -1705,24 +1705,54 @@ public final class Store {
 
     // ---- 难度自适应 ----
 
-    /** 练完觉得太轻松或太吃力时，把难度档位往对应方向挪一格，返回实际变化量。 */
+    /** 练完觉得太轻松或太吃力时，三条曲线一起挪一格（没有具体部位时用）。 */
     public static int nudgeLevel(Context c, int delta) {
         if (delta == 0) {
             return 0;
         }
         PlanProfile p = profile(c);
-        return setLevel(c, p.level + delta);
+        return setLevel(c, p.avgLevel() + delta);
     }
 
-    /** 把难度直接设到某一档，返回相对当前档的变化量。越界的部分会被夹住。 */
-    public static int setLevel(Context c, int level) {
+    /**
+     * 只调一条曲线：今天主要练腿，觉得吃力就只降腿臀，
+     * 不会把本来做得很顺的俯卧撑也一起降下来。
+     */
+    public static int setPartLevel(Context c, String part, int level) {
         PlanProfile p = profile(c);
-        int before = p.level;
-        int after = Math.max(0, Math.min(PlanProfile.LEVELS.length - 1, level));
+        int slot = PlanProfile.slotOf(part);
+        if (slot < 0) {
+            return setLevel(c, level);
+        }
+        int before = p.levelOfSlot(slot);
+        int after = Math.max(PlanProfile.LEVEL_MIN,
+                Math.min(PlanProfile.LEVEL_MAX, level));
         if (after == before) {
             return 0;
         }
-        p.level = after;
+        p.setLevelOfSlot(slot, after);
+        p.syncLegacyLevel();
+        saveProfile(c, p);
+        return after - before;
+    }
+
+    /** 自测结果：三条曲线一次写入，顺带把旧档位对齐成平均值。 */
+    public static void setPartLevels(Context c, int chest, int legs, int core) {
+        PlanProfile p = profile(c);
+        p.applyLevels(chest, legs, core);
+        saveProfile(c, p);
+    }
+
+    /** 把三条曲线一起设到某一档（计划页的「新手 / 进阶 / 高手」快捷方式）。 */
+    public static int setLevel(Context c, int level) {
+        PlanProfile p = profile(c);
+        int before = p.avgLevel();
+        int after = Math.max(PlanProfile.LEVEL_MIN,
+                Math.min(PlanProfile.LEVEL_MAX, level));
+        if (after == before) {
+            return 0;
+        }
+        p.applyLevels(after, after, after);
         saveProfile(c, p);
         return after - before;
     }

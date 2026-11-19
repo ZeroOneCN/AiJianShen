@@ -106,4 +106,62 @@ public class Exercise {
         }
         return cut > 40 ? s.substring(0, cut) : s.substring(0, 112);
     }
+
+    // ---- 难度推断 ----
+
+    /** 明显更难的说法：单侧、爆发、体操类动作，直接比同部位高两档。 */
+    private static final String[] HARD_2 = {
+            "单臂", "单腿", "单手", "手枪", "击掌", "跳跃", "爆发", "深度跳",
+            "倒立", "旗帜", "前水平", "马耳他", "俄挺", "慢起", "杠铃", "壶铃"};
+    /** 略难：负重、下斜、器械、全程幅度。 */
+    private static final String[] HARD_1 = {
+            "下斜", "负重", "哑铃", "药球", "史密斯", "绳索", "全程", "加强"};
+    /** 明显更简单：靠墙、辅助、跪姿、半程。 */
+    private static final String[] EASY_2 = {
+            "靠墙", "辅助", "助力", "跪姿", "半程", "简化"};
+    /** 略简单：上斜、坐姿、静态。 */
+    private static final String[] EASY_1 = {
+            "上斜", "坐姿", "静态", "支撑"};
+
+    private int difficulty = -1;
+
+    /**
+     * 粗略难度 1–5。动作库没有难度字段，只能按命名规律推断：
+     * 不求每个都准，只要「同部位里谁比谁简单」的相对顺序大致对，
+     * 换动作就不会再拿秒数硬猜（同部位常常全是 40 秒）。
+     */
+    public int difficulty() {
+        if (difficulty > 0) {
+            return difficulty;
+        }
+        String n = name == null ? "" : name;
+        int d = 3;
+        for (String k : HARD_2) {
+            if (n.contains(k)) {
+                d += 2;
+            }
+        }
+        for (String k : HARD_1) {
+            if (n.contains(k)) {
+                d += 1;
+            }
+        }
+        for (String k : EASY_2) {
+            if (n.contains(k)) {
+                d -= 2;
+            }
+        }
+        for (String k : EASY_1) {
+            if (n.contains(k)) {
+                d -= 1;
+            }
+        }
+        if ("爆发".equals(kind)) {
+            d += 1;
+        } else if ("拉伸".equals(kind)) {
+            d -= 1;
+        }
+        difficulty = Math.max(1, Math.min(5, d));
+        return difficulty;
+    }
 }

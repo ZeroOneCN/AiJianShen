@@ -19,7 +19,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /** 练后结果：本次统计、周进度、感受、体重与提醒。 */
@@ -52,6 +54,8 @@ public class ResultActivity extends Activity {
     private int feel = -1;
     /** 点第一下之前的难度档位，改主意时以它为准。 */
     private int feelBaseLevel = -1;
+    /** 今天主要练的部位：感受只调这一条曲线。 */
+    private String feelPart;
     private TextView feelTip;
     /** 选完感受才出现的「下一步」，没选之前不占位置。 */
     private LinearLayout adviceCard;
@@ -355,8 +359,7 @@ public class ResultActivity extends Activity {
         card.addView(q);
         TextView tip = new TextView(this);
         feelTip = tip;
-        tip.setText("现在是「" + Store.profile(this).levelLabel()
-                + "」。觉得轻松会加一档，吃力会降一档，下周生效。");
+        tip.setText(feelTipText());
         tip.setTextColor(Ui.INK_SOFT);
         tip.setTextSize(12);
         tip.setPadding(0, Ui.dpi(this, 3), 0, Ui.dpi(this, 10));
@@ -419,17 +422,26 @@ public class ResultActivity extends Activity {
 
         // 第一次点的时候记下原来的档位，之后再改主意都以它为准，
         // 这样「太轻松 → 太吃力」不会把档位来回拉扯。
+        if (feelPart == null) {
+            feelPart = mainPart();
+        }
+        PlanProfile p = Store.profile(this);
         if (feelBaseLevel < 0) {
-            feelBaseLevel = Store.profile(this).level;
+            feelBaseLevel = feelPart == null ? p.avgLevel() : p.levelOfPart(feelPart);
         }
         int delta = idx == 0 ? 1 : (idx == 2 ? -1 : 0);
-        Store.setLevel(this, feelBaseLevel + delta);
-        String now = Store.profile(this).levelLabel();
+        // 只动今天主要练的那条曲线：练腿觉得吃力，不该把俯卧撑也一起降了
+        if (feelPart == null) {
+            Store.setLevel(this, feelBaseLevel + delta);
+        } else {
+            Store.setPartLevel(this, feelPart, feelBaseLevel + delta);
+        }
+        String now = feelTipText();
         if (feelTip != null) {
-            feelTip.setText("现在是「" + now + "」。觉得轻松会加一档，吃力会降一档，下周生效。");
+            feelTip.setText(now);
         }
         Toast.makeText(this, idx == 1 ? "已记录：刚刚好"
-                : "已记录：" + FEEL_LABELS[idx] + "，下周按「" + now + "」安排",
+                : "已记录：" + FEEL_LABELS[idx] + "，下周按新的等级安排",
                 Toast.LENGTH_SHORT).show();
 
         Coach.Advice ad = Coach.forResult(this, idx, motionName(), pr);
@@ -438,6 +450,54 @@ public class ResultActivity extends Activity {
             adviceBody.setText(ad.body);
             adviceCard.setVisibility(View.VISIBLE);
         }
+    }
+
+    /** 感受卡上那句提示：说清「现在是练哪条曲线、多少级」。 */
+    private String feelTipText() {
+        if (feelPart == null) {
+            feelPart = mainPart();
+        }
+        PlanProfile p = Store.profile(this);
+        if (feelPart == null) {
+            return "现在是「" + p.levelLabel()
+                    + "」。觉得轻松会加一档，吃力会降一档，下周生效。";
+        }
+        return "现在是「" + feelPart + " L" + p.levelOfPart(feelPart)
+                + "」。觉得轻松会加一档，吃力会降一档，下周生效。";
+    }
+
+    /**
+     * 今天主要练的部位：当天动作里出现最多的那个部位。
+     * 感受只调它一条曲线，避免练腿吃力把俯卧撑也一起降了。
+     */
+    private String mainPart() {
+        if (single != null && !single.isEmpty()) {
+            Exercise one = Data.get(single);
+            if (one != null) {
+                return one.part;
+            }
+        }
+        try {
+            Data.Day d = Data.withOverrides(
+                    Data.weekPlan(Store.profile(this)).get(dayIndex),
+                    Store.overrides(this, dayIndex));
+            if (d != null && !d.exercises.isEmpty()) {
+                Map<String, Integer> count = new HashMap<>();
+                String best = null;
+                int max = 0;
+                for (Exercise e : d.exercises) {
+                    int n = count.getOrDefault(e.part, 0) + 1;
+                    count.put(e.part, n);
+                    if (n > max) {
+                        max = n;
+                        best = e.part;
+                    }
+                }
+                return best;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     /** 建议里要说到具体动作名：单动作练就是它，整课就用当天第一个动作。 */
