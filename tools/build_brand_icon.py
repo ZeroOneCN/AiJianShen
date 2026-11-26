@@ -16,6 +16,9 @@
   res/drawable/ic_launcher_monochrome.xml   主题图标单色层
   res/drawable/ic_brand_mark.xml            应用内用的圆角完整版（带描边）
 
+只生成矢量。启动器位图（mipmap-*/ic_launcher.png）和平台上传用的 512 图
+由 tools/build_launcher_icons.py 从同一套预设渲染，改了图形要两个脚本都跑。
+
 用法：python tools/build_brand_icon.py [--preset fitness] [--skill <skill 目录>]
 """
 import argparse
