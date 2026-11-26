@@ -4,10 +4,11 @@
 品牌规范（白底 + 渐变蓝）来自 ~/.trae-cn/skills/brand-icon-system：
   ｜ 底      | #FFFFFF 42% 硬切 #F3F8FD → #E9F1FA |
   ｜ 图形    | #64C1F7 → #2E93E4 → #1A6DBC        |
-  ｜ 图形占比 | 桌面 72%（安全区）/ 应用内 92%     |
+  ｜ 图形占比 | 桌面 65%（补偿启动器放大）/ 92%    |
 
-图形占比：应用内圆角标识按规范 92%；桌面自适应图标用 72%——自适应图标只有中间
-72×72dp 是保证可见的安全区，92% 会把手臂和底部弧线顶到方圆遮罩的圆角上被切掉。
+图形占比：应用内圆角标识按规范 92%；桌面自适应图标用 65%。
+真机实测 vivo 启动器把自适应图标放大 ~1.42 倍、只露中间 72dp，65% 乘回去
+正好是设计意图的 92% 密度，且边缘不再被切。Pixel/三星等不缩放的启动器上会略小一点。
 
 输出：
   res/drawable/ic_launcher_background.xml   自适应图标背景层（满幅渐变）
@@ -31,7 +32,7 @@ BASE_BOTTOM = 'E9F1FA'
 STROKE = 'DCE5F1'
 GRADIENT = [('64C1F7', 0), ('2E93E4', 0.55), ('1A6DBC', 1)]
 RADIUS_RATIO = 0.219
-GLYPH_ADAPTIVE = 0.72
+GLYPH_ADAPTIVE = 0.65
 GLYPH_BRAND = 0.92
 CANVAS = 108.0
 
