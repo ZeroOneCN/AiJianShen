@@ -71,10 +71,11 @@ public class GeneralSettingsActivity extends Activity {
         body.addView(other, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         UiList.row(this, other, IconView.INFO, Ui.ACCENT, "本机数据",
-                "不联网、无账号、无云端同步", true,
+                "本机存储、无账号、无云端", true,
                 v -> InfoDialog.show(this, "本机数据",
                         "训练记录、体重、提醒和动作替换都保存在本机 SharedPreferences。\n\n"
-                                + "应用不申请网络权限，也没有登录和云端同步。"
+                                + "没有账号，也没有云端同步。网络只在两处用到：手机间同步由你主动开启，"
+                                + "更新检查只发送应用包名和版本号。\n\n"
                                 + "卸载应用会同时删除这些数据。"));
     }
 

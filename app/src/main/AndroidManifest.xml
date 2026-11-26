@@ -6,8 +6,11 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <!-- 仅用于同一 Wi-Fi 下的局域网同步（手机与手机之间），不访问公网 -->
+    <!-- 仅用于同一 Wi-Fi 下的局域网同步（手机与手机之间）与更新检查 -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 应用内下载新版本后交给系统安装器；不申请则只能停在下载完成那一步 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- 蓝牙体脂秤：Android 12+ 用「附近设备」，更早的版本扫描 BLE 需要位置权限 -->
     <uses-permission
@@ -192,6 +195,16 @@
             </intent-filter>
         </receiver>
 
+        <!--
+          更新包的出口。安装器在另一个进程里读文件，file:// 会被 FileUriExposedException 拦下，
+          所以走内容提供者：不导出、只授临时读权限、只认缓存目录里的 update.apk。
+        -->
+        <provider
+            android:name=".ApkProvider"
+            android:authorities="${applicationId}.apk"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
   </application>
 
   <!--
@@ -202,6 +215,11 @@
   <queries>
     <intent>
       <action android:name="android.intent.action.TTS_SERVICE" />
+    </intent>
+    <!-- 同理：看不到安装器，startActivity 会直接抛 ActivityNotFoundException -->
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:mimeType="application/vnd.android.package-archive" />
     </intent>
   </queries>
 

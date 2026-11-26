@@ -21,6 +21,7 @@ import android.widget.Toast;
 public class SettingsActivity extends Activity {
 
     private TextView btnCustom;
+    private UiList.Row updateRow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -112,15 +113,18 @@ public class SettingsActivity extends Activity {
                 "蓝牙直连，读体重与体脂率", false,
                 v -> startActivity(new Intent(this, ScaleActivity.class)));
         addRow(main, IconView.SHIELD, Ui.ACCENT, "数据与隐私",
-                "本机存储，网络仅用于手机间同步", false,
+                "本机存储，网络只用于同步与更新检查", false,
                 v -> info("数据与隐私",
-                        "训练记录、体重、身高、计划条件与训练偏好只保存在本机，没有账号体系，也不上传到任何服务器。\n\n蓝牙只用于连接你自己的体脂秤，读取重量与阻抗；体成分由本机按 BIA 公式估算。\n\n手机间同步是可选项：只有你主动开启同步服务或填写对方地址时，应用才会在同一 Wi-Fi 下与另一台手机交换数据；平时不发起任何网络请求。\n\n训练提醒使用系统本地通知，不需要联网，也不会读取联系人。\n\n卸载应用或在下方清除记录后，数据会被删除。"));
+                        "训练记录、体重、身高、计划条件与训练偏好只保存在本机，没有账号体系，也不上传到任何服务器。\n\n蓝牙只用于连接你自己的体脂秤，读取重量与阻抗；体成分由本机按 BIA 公式估算。\n\n手机间同步是可选项：只有你主动开启同步服务或填写对方地址时，应用才会在同一 Wi-Fi 下与另一台手机交换数据。\n\n更新检查：启动时最多每 6 小时向 apps.01iot.top 请求一次版本信息，只发送应用包名和版本号，不发送设备标识、训练记录或任何个人内容。安装包只从该站点的 HTTPS 地址下载，落地后先比对 SHA-256 才会交给系统安装器。\n\n训练提醒使用系统本地通知，不需要联网，也不会读取联系人。\n\n卸载应用或在下方清除记录后，数据会被删除。"));
         addRow(main, IconView.TRASH, Ui.RED, "清除训练记录",
                 "保留定制计划与个人数据，只删除训练记录", true,
                 v -> confirmClear());
 
         // 「关于」用 i 圈，不用五角星：星标在应用里已经是「收藏」的语义，
         // 同一个图形承担两种含义，用户会以为这是「给应用点赞」。
+        updateRow = UiList.row(this, more, IconView.REFRESH, Ui.ACCENT,
+                "检查更新", UpdateFlow.statusText(this), false,
+                v -> UpdateFlow.checkManual(this, updateRow.sub));
         addRow(more, IconView.INFO, Ui.ACCENT, "关于爱健身", "版本与说明", true,
                 v -> aboutDialog());
     }
@@ -210,9 +214,9 @@ public class SettingsActivity extends Activity {
         Ui.font(noteTitle, 700);
         note.addView(noteTitle);
 
-        updateLine(note, "动作名称与要领完整显示，不再截断");
-        updateLine(note, "图标重新绘制，图形更饱满清晰");
-        updateLine(note, "休息时可快捷加时、跳过，页面不再跳动");
+        updateLine(note, "设置里能直接检查更新，下载后一键安装");
+        updateLine(note, "素材重新压缩，安装包从 95 MB 降到 42 MB");
+        updateLine(note, "动作图按屏幕尺寸重新出图，肉眼无差别");
 
         TextView ok = new TextView(this);
         ok.setText("知道了");
@@ -288,9 +292,9 @@ public class SettingsActivity extends Activity {
     private String versionName() {
         try {
             String v = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-            return v == null || v.isEmpty() ? "1.9.5" : v;
+            return v == null || v.isEmpty() ? "1.9.6" : v;
         } catch (Exception e) {
-            return "1.9.5";
+            return "1.9.6";
         }
     }
 
@@ -298,6 +302,10 @@ public class SettingsActivity extends Activity {
     protected void onResume() {
         super.onResume();
         btnCustom.setText(Store.hasProfile(this) ? "调整我的计划" : "定制我的计划");
+        if (updateRow != null) {
+            updateRow.sub.setText(UpdateFlow.statusText(this));
+        }
+        UpdateFlow.resumePendingInstall(this);
     }
 
     private void addRow(LinearLayout card, int icon, int tileColor, String title,

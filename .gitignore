@@ -27,6 +27,9 @@ build/shots/
 .DS_Store
 Thumbs.db
 
+# 资源压缩备份（体积大，不入库）
+app/src/main/assets/.shrink-backup/
+
 # 本地调试样张
 tools/cache/gymchk/
 /fix-home.png

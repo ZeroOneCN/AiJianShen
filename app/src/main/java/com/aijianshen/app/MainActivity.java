@@ -61,10 +61,15 @@ public class MainActivity extends Activity {
             if (needsOnboard()) {
                 new Handler(Looper.getMainLooper()).postDelayed(() ->
                         startActivity(new Intent(this, OnboardActivity.class)), 350);
-            } else if (!Store.hasProfile(this)) {
-                new Handler(Looper.getMainLooper()).postDelayed(() ->
-                        startActivity(new Intent(this, PlanActivity.class)
-                                .putExtra(PlanActivity.EXTRA_ONBOARDING, true)), 350);
+            } else {
+                if (!Store.hasProfile(this)) {
+                    new Handler(Looper.getMainLooper()).postDelayed(() ->
+                            startActivity(new Intent(this, PlanActivity.class)
+                                    .putExtra(PlanActivity.EXTRA_ONBOARDING, true)), 350);
+                }
+                // 更新检查放在首屏画完之后：新用户先走引导，别拿弹窗堵在前面。
+                // 检查本身在后台线程，没网也不会卡住开屏。
+                UpdateFlow.checkOnLaunch(this);
             }
         }
     }
@@ -164,6 +169,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        // 更新下载完去过「允许安装未知应用」的话，回到这里就接着装
+        UpdateFlow.resumePendingInstall(this);
         profile = Store.profile(this);
         plan = Data.weekPlan(profile);
         todayIndex = Data.todayIndex(Calendar.getInstance());
