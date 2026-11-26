@@ -4,10 +4,10 @@
 品牌规范（白底 + 渐变蓝）来自 ~/.trae-cn/skills/brand-icon-system：
   ｜ 底      | #FFFFFF 42% 硬切 #F3F8FD → #E9F1FA |
   ｜ 图形    | #64C1F7 → #2E93E4 → #1A6DBC        |
-  ｜ 图形占比 | 92%（桌面与应用内一致）           |
+  ｜ 图形占比 | 桌面 72%（安全区）/ 应用内 92%     |
 
-图形占比按品牌规范 92% 落，与 brand-icon-system 的 SVG 输出完全一致。
-注：部分国产启动器会把自适应图标整体放大去填满遮罩，边缘可能被切一点，属启动器行为。
+图形占比：应用内圆角标识按规范 92%；桌面自适应图标用 72%——自适应图标只有中间
+72×72dp 是保证可见的安全区，92% 会把手臂和底部弧线顶到方圆遮罩的圆角上被切掉。
 
 输出：
   res/drawable/ic_launcher_background.xml   自适应图标背景层（满幅渐变）
@@ -31,7 +31,7 @@ BASE_BOTTOM = 'E9F1FA'
 STROKE = 'DCE5F1'
 GRADIENT = [('64C1F7', 0), ('2E93E4', 0.55), ('1A6DBC', 1)]
 RADIUS_RATIO = 0.219
-GLYPH_ADAPTIVE = 0.92
+GLYPH_ADAPTIVE = 0.72
 GLYPH_BRAND = 0.92
 CANVAS = 108.0
 
