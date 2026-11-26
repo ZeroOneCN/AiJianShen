@@ -143,9 +143,9 @@ public class SettingsActivity extends Activity {
         head.setOrientation(LinearLayout.HORIZONTAL);
         head.setGravity(Gravity.CENTER_VERTICAL);
 
-        // 直接用应用图标，和桌面上看到的是同一个
+        // 和桌面图标同一套品牌规范，但这里是圆角完整版（启动器才会裁形状）
         ImageView logo = new ImageView(this);
-        logo.setImageResource(R.mipmap.ic_launcher);
+        logo.setImageResource(R.drawable.ic_brand_mark);
         head.addView(logo, new LinearLayout.LayoutParams(
                 Ui.dpi(this, 52), Ui.dpi(this, 52)));
 
